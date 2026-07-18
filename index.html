@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC Achievement Fixer</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header ala WhatsApp -->
+  <header class="app-header">
+    <div class="avatar">🏆</div>
+    <div class="header-info">
+      <h1>MC Achievement Fixer</h1>
+      <span class="status-text" id="statusText">online</span>
+    </div>
+  </header>
+
+  <!-- Chat area -->
+  <main class="chat-area" id="chatArea">
+
+    <div class="date-chip">Bedrock Edition • level.dat Tool</div>
+
+    <div class="bubble bubble-left">
+      <p>👋 Halo! Tool ini membantu mengaktifkan kembali <b>World Achievements</b> pada dunia Minecraft Bedrock kamu yang sudah ter-nonaktif.</p>
+      <p style="margin-top:6px;">Achievement biasanya nonaktif karena world <b>pernah dibuka di Creative mode</b> atau <b>pernah mengaktifkan Cheats/Allow Cheats</b> — meskipun sekarang sudah dikembalikan ke Survival dan cheat sudah dimatikan, status "disabled"-nya tetap tersimpan di file world.</p>
+      <span class="time">10:00</span>
+    </div>
+
+    <div class="bubble bubble-left">
+      <p><b>📍 Lokasi folder world Minecraft</b></p>
+      <p style="margin-top:6px;"><b>Android :</b><br>
+      <code>Android/data/com.mojang.minecraftpe/files/games/com.mojang/minecraftWorlds</code></p>
+      <p style="margin-top:6px;"><b>CATATAN PENTING :</b> <u>Di Android 11+, folder ini tidak bisa diakses langsung karena pembatasan storage. Gunakan fitur <i>Export</i> di dalam Minecraft untuk mengekspor world ke file .mcworld agar bisa diupload ke tool ini.</u></p>
+      <p style="margin-top:6px;"><b>Windows : Klik Windows + R lalu ketik <code>%appdata%</code></b><br>
+      <code>C:/Users/Hp/AppData/Roaming/Minecraft Bedrock/Users/11907246186634818286/games/com.mojang/minecraftWorlds</code></p>
+      <span class="time">10:01</span>
+    </div>
+
+    <div class="bubble bubble-left">
+      <p><b>Cara siapkan file world untuk diupload:</b><br>
+      1️⃣ <b>Cara termudah:</b> di dalam Minecraft, buka Settings world → <i>Export</i> → simpan sebagai <code>.mcworld</code><br>
+      2️⃣ <b>Cara manual:</b> masuk ke folder <code>minecraftWorlds</code> di atas, cari folder world kamu (nama acak seperti kode), lalu kompres/zip seluruh folder tersebut dan ganti ekstensinya jadi <code>.mcworld</code><br>
+      3️⃣ Upload file <code>.mcworld</code> itu langsung di bawah ini 👇</p>
+      <span class="time">10:01</span>
+    </div>
+
+    <div class="bubble bubble-left warn">
+      <p>⚠️ Selalu <b>backup</b> world kamu dulu sebelum diproses. Tool ini hanya mengubah 1 flag byte di dalam level.dat, file lain di dalam world tidak disentuh.</p>
+      <span class="time">10:01</span>
+    </div>
+
+    <!-- Upload card -->
+    <div class="bubble bubble-left upload-card">
+      <p><b>📁 Upload World (.mcworld)</b></p>
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept=".mcworld,.zip" hidden>
+        <div class="drop-icon">🌍</div>
+        <p id="dropText">Tap untuk pilih file .mcworld, atau drag & drop di sini</p>
+      </div>
+
+      <div class="info-fix-list">
+        <p style="font-size:12.5px; color:var(--wa-text-muted); margin-bottom:6px;"><b>Tag yang otomatis diperbaiki:</b></p>
+        <ul style="margin-left:16px; font-size:12.5px; color:var(--wa-text-muted);">
+          <li><code>hasBeenLoadedInCreative</code></li>
+          <li><code>cheatsEnabled</code></li>
+          <li><code>commandsEnabled</code></li>
+        </ul>
+      </div>
+
+      <button id="processBtn" class="btn-main" disabled>Proses World & Aktifkan Achievement</button>
+    </div>
+
+    <div id="resultArea"></div>
+
+  </main>
+
+  <!-- Footer input bar (dekorasi ala WA) -->
+  <footer class="app-footer">
+    <div class="fake-input">Client-side only • Tidak ada data dikirim ke server 🔒</div>
+  </footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
