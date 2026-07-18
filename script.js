@@ -107,6 +107,18 @@ processBtn.addEventListener('click', async () => {
       });
     });
 
+    // GameType (TAG_Int) -> 0 (Survival). Kalau world saat ini masih
+    // default Creative, achievement tidak akan bisa didapat walau
+    // semua flag riwayat di atas sudah 0.
+    const gameTypeResult = setNamedIntTag(levelDatBytes, 'GameType', 0);
+    report.push({
+      type: 'flag',
+      name: 'GameType (mode dipaksa ke Survival)',
+      found: gameTypeResult.found,
+      before: gameTypeResult.found ? gameTypeResult.before : null,
+      after: gameTypeResult.found ? 0 : null
+    });
+
     // === BAGIAN 2: Lepas behavior pack & resource pack dari world ===
     // Add-on/behavior pack yang masih aktif di sebuah world membuat
     // achievement tetap terkunci walau semua flag di atas sudah 0.
@@ -201,6 +213,38 @@ function findLevelDatEntry(zip) {
 }
 
 /* ---------------------------------------------------------
+   Sama seperti setNamedByteTag, tapi untuk TAG_Int (type 0x03),
+   payload 4 byte little-endian. Dipakai untuk tag seperti GameType.
+--------------------------------------------------------- */
+function setNamedIntTag(bytes, tagName, newValue) {
+  const nameBytes = new TextEncoder().encode(tagName);
+  const nameLen = nameBytes.length;
+
+  for (let i = 0; i < bytes.length - (3 + nameLen + 4); i++) {
+    if (bytes[i] !== 0x03) continue; // TAG_Int
+
+    const len = bytes[i + 1] | (bytes[i + 2] << 8);
+    if (len !== nameLen) continue;
+
+    let match = true;
+    for (let j = 0; j < nameLen; j++) {
+      if (bytes[i + 3 + j] !== nameBytes[j]) { match = false; break; }
+    }
+    if (!match) continue;
+
+    const payloadIndex = i + 3 + nameLen;
+    const before = (bytes[payloadIndex]) | (bytes[payloadIndex+1] << 8) | (bytes[payloadIndex+2] << 16) | (bytes[payloadIndex+3] << 24);
+    bytes[payloadIndex]     = newValue & 0xff;
+    bytes[payloadIndex + 1] = (newValue >> 8) & 0xff;
+    bytes[payloadIndex + 2] = (newValue >> 16) & 0xff;
+    bytes[payloadIndex + 3] = (newValue >> 24) & 0xff;
+    return { found: true, before, index: payloadIndex };
+  }
+
+  return { found: false, before: null, index: -1 };
+}
+
+/* ---------------------------------------------------------
    Mencari tag NBT bertipe TAG_Byte dengan nama tertentu,
    lalu mengubah nilai payload-nya (in-place pada buffer).
    Format tag: [type=0x01][nameLen:int16 LE][name bytes][value:1 byte]
@@ -250,7 +294,9 @@ function renderResult(report, blob, outName) {
   html += '<p style="margin-top:8px; font-size:13px;"><b>Flag di level.dat:</b></p><ul style="margin:4px 0 0 18px;">';
   flagResults.forEach(r => {
     if (r.found) {
-      html += `<li><code>${escapeHtml(r.name)}</code>: ${r.before} ➜ ${r.after}</li>`;
+      const beforeLabel = r.name.startsWith('GameType') ? gameTypeLabel(r.before) : r.before;
+      const afterLabel = r.name.startsWith('GameType') ? gameTypeLabel(r.after) : r.after;
+      html += `<li><code>${escapeHtml(r.name)}</code>: ${beforeLabel} ➜ ${afterLabel}</li>`;
     } else {
       html += `<li><code>${escapeHtml(r.name)}</code>: tidak ditemukan (dilewati)</li>`;
     }
@@ -313,6 +359,11 @@ function renderError(message) {
 }
 
 /* ---------- Util ---------- */
+
+function gameTypeLabel(val) {
+  const map = { 0: 'Survival', 1: 'Creative', 2: 'Adventure', 3: 'Spectator' };
+  return map[val] !== undefined ? `${map[val]} (${val})` : val;
+}
 
 function htmlToNode(html) {
   const wrapper = document.createElement('div');
