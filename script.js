@@ -2,10 +2,14 @@
    MC Achievement Fixer
    Upload file world Minecraft Bedrock (.mcworld) secara utuh.
    .mcworld sebenarnya adalah file ZIP berisi level.dat, db/,
-   dsb. Tool ini membuka zip tersebut (pakai JSZip), mencari
-   level.dat di dalamnya, mengubah 1 flag byte NBT
-   "hasBeenLoadedInCreative", "cheatsEnabled", dan "commandsEnabled",
-   lalu membungkus ulang jadi .mcworld baru untuk diunduh.
+   world_behavior_packs.json, dsb. Tool ini:
+   1) Membuka zip tersebut (pakai JSZip)
+   2) Nol-kan flag byte NBT di level.dat: hasBeenLoadedInCreative,
+      cheatsEnabled, commandsEnabled, experiments_ever_used,
+      saved_with_toggled_experiments
+   3) Mengosongkan world_behavior_packs.json & world_resource_packs.json
+      (melepas add-on yang membuat achievement terkunci)
+   4) Membungkus ulang jadi .mcworld baru untuk diunduh
 
    Semua proses berjalan 100% di browser (client-side),
    tidak ada data yang dikirim ke server manapun.
@@ -78,16 +82,24 @@ processBtn.addEventListener('click', async () => {
 
     const report = [];
 
-    // Tag-tag yang menentukan status "Achievements Disabled" di Bedrock:
-    // - hasBeenLoadedInCreative -> paling sering jadi penyebab, ke-trigger begitu
-    //   world pernah dibuka di Creative mode (meski sudah balik ke Survival)
-    // - cheatsEnabled / commandsEnabled -> aktif kalau "Allow Cheats" pernah ON
-    // Ketiganya harus 0 (0b) supaya achievement bisa aktif lagi.
-    const tagsToFix = ['hasBeenLoadedInCreative', 'cheatsEnabled', 'commandsEnabled'];
+    // === BAGIAN 1: Flag byte di level.dat ===
+    // - hasBeenLoadedInCreative -> world pernah dibuka di Creative mode
+    // - cheatsEnabled / commandsEnabled -> "Allow Cheats" pernah ON
+    // - experiments_ever_used / saved_with_toggled_experiments -> pernah
+    //   mengaktifkan salah satu Experimental Gameplay toggle (flag ini
+    //   muncul otomatis begitu experiment pernah dinyalakan sekali saja)
+    const tagsToFix = [
+      'hasBeenLoadedInCreative',
+      'cheatsEnabled',
+      'commandsEnabled',
+      'experiments_ever_used',
+      'saved_with_toggled_experiments'
+    ];
 
     tagsToFix.forEach(tagName => {
       const result = setNamedByteTag(levelDatBytes, tagName, 0);
       report.push({
+        type: 'flag',
         name: tagName,
         found: result.found,
         before: result.before,
@@ -95,7 +107,38 @@ processBtn.addEventListener('click', async () => {
       });
     });
 
-    const anyFound = report.some(r => r.found);
+    // === BAGIAN 2: Lepas behavior pack & resource pack dari world ===
+    // Add-on/behavior pack yang masih aktif di sebuah world membuat
+    // achievement tetap terkunci walau semua flag di atas sudah 0.
+    const packFiles = ['world_behavior_packs.json', 'world_resource_packs.json'];
+
+    for (const fileName of packFiles) {
+      const entry = findEntryByName(zip, fileName);
+      if (!entry) {
+        report.push({ type: 'pack', name: fileName, found: false });
+        continue;
+      }
+
+      const text = await entry.async('string');
+      let packCount = 0;
+      try {
+        const parsed = JSON.parse(text);
+        packCount = Array.isArray(parsed) ? parsed.length : 0;
+      } catch (e) {
+        packCount = text.trim().length > 2 ? -1 : 0; // -1 = tidak bisa diparse tapi ada isi
+      }
+
+      if (packCount > 0 || packCount === -1) {
+        zip.file(entry.name, '[]');
+        report.push({ type: 'pack', name: fileName, found: true, removedCount: packCount });
+      } else {
+        report.push({ type: 'pack', name: fileName, found: true, removedCount: 0 });
+      }
+    }
+
+    const anyFlagFound = report.some(r => r.type === 'flag' && r.found);
+    const anyPackRemoved = report.some(r => r.type === 'pack' && r.found && r.removedCount !== 0);
+    const anyFound = anyFlagFound || anyPackRemoved;
 
     if (!anyFound) {
       renderNotFound(report);
@@ -123,6 +166,23 @@ processBtn.addEventListener('click', async () => {
     processBtn.textContent = 'Proses World & Aktifkan Achievement';
   }
 });
+
+/* ---------------------------------------------------------
+   Cari entry file apapun berdasarkan nama persis (case-insensitive),
+   baik di root maupun nested di dalam zip.
+--------------------------------------------------------- */
+function findEntryByName(zip, fileName) {
+  let candidate = null;
+  const lowerTarget = fileName.toLowerCase();
+  zip.forEach((relativePath, entry) => {
+    if (entry.dir) return;
+    const lower = relativePath.toLowerCase();
+    if (lower === lowerTarget || lower.endsWith('/' + lowerTarget)) {
+      candidate = entry;
+    }
+  });
+  return candidate;
+}
 
 /* ---------------------------------------------------------
    Cari entry "level.dat" di dalam zip (root atau nested,
@@ -181,9 +241,14 @@ function suggestOutputName(originalName) {
 /* ---------- Render hasil ke chat ---------- */
 
 function renderResult(report, blob, outName) {
+  const flagResults = report.filter(r => r.type === 'flag');
+  const packResults = report.filter(r => r.type === 'pack');
+
   let html = '<div class="bubble result-bubble">';
-  html += '<p><b>✅ World selesai diproses!</b></p><ul style="margin:8px 0 0 18px;">';
-  report.forEach(r => {
+  html += '<p><b>✅ World selesai diproses!</b></p>';
+
+  html += '<p style="margin-top:8px; font-size:13px;"><b>Flag di level.dat:</b></p><ul style="margin:4px 0 0 18px;">';
+  flagResults.forEach(r => {
     if (r.found) {
       html += `<li><code>${escapeHtml(r.name)}</code>: ${r.before} ➜ ${r.after}</li>`;
     } else {
@@ -191,6 +256,26 @@ function renderResult(report, blob, outName) {
     }
   });
   html += '</ul>';
+
+  html += '<p style="margin-top:10px; font-size:13px;"><b>Behavior/Resource Pack:</b></p><ul style="margin:4px 0 0 18px;">';
+  packResults.forEach(r => {
+    if (!r.found) {
+      html += `<li><code>${escapeHtml(r.name)}</code>: file tidak ada (world tidak pakai add-on)</li>`;
+    } else if (r.removedCount > 0) {
+      html += `<li><code>${escapeHtml(r.name)}</code>: ${r.removedCount} pack dilepas dari world</li>`;
+    } else if (r.removedCount === -1) {
+      html += `<li><code>${escapeHtml(r.name)}</code>: isi dikosongkan</li>`;
+    } else {
+      html += `<li><code>${escapeHtml(r.name)}</code>: sudah kosong, tidak ada pack aktif</li>`;
+    }
+  });
+  html += '</ul>';
+
+  const packRemoved = packResults.some(r => r.found && r.removedCount !== 0);
+  if (packRemoved) {
+    html += '<p style="margin-top:8px; font-size:12.5px; color:var(--wa-danger-text);">⚠️ Add-on/behavior pack dilepas dari world ini. Jika world bergantung pada blok/item custom dari pack tersebut, sebagian konten bisa hilang atau berubah jadi "unknown". Pastikan sudah backup!</p>';
+  }
+
   html += '<p style="margin-top:8px;"><b>Cara pakai hasilnya:</b><br>';
   html += 'Cara termudah — tap file hasil download, Minecraft akan otomatis meng-import world ini sebagai world baru.<br><br>';
   html += 'Atau cara manual — ganti world lama kamu di folder:<br>';
@@ -212,8 +297,8 @@ function renderResult(report, blob, outName) {
 
 function renderNotFound(report) {
   let html = '<div class="bubble result-bubble error">';
-  html += '<p>❌ Tag <code>hasBeenLoadedInCreative</code>, <code>cheatsEnabled</code>, maupun <code>commandsEnabled</code> tidak ditemukan di level.dat world ini.</p>';
-  html += '<p style="margin-top:6px;">Kemungkinan world memang belum pernah menonaktifkan achievement (harusnya sudah aktif), atau struktur level.dat tidak standar.</p>';
+  html += '<p>❌ Tidak ada flag achievement maupun behavior/resource pack yang perlu diperbaiki di world ini.</p>';
+  html += '<p style="margin-top:6px;">Kemungkinan world memang belum pernah menonaktifkan achievement (harusnya sudah aktif), atau struktur world tidak standar.</p>';
   html += '<span class="time">' + nowTime() + '</span></div>';
   const node = htmlToNode(html);
   resultArea.appendChild(node);

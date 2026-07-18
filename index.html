@@ -27,7 +27,14 @@
 
     <div class="bubble bubble-left">
       <p>👋 Halo! Tool ini membantu mengaktifkan kembali <b>World Achievements</b> pada dunia Minecraft Bedrock kamu yang sudah ter-nonaktif.</p>
-      <p style="margin-top:6px;">Achievement biasanya nonaktif karena world <b>pernah dibuka di Creative mode</b> atau <b>pernah mengaktifkan Cheats/Allow Cheats</b> — meskipun sekarang sudah dikembalikan ke Survival dan cheat sudah dimatikan, status "disabled"-nya tetap tersimpan di file world.</p>
+      <p style="margin-top:6px;">Achievement biasanya nonaktif karena salah satu dari ini pernah terjadi di world kamu:</p>
+      <ul style="margin:6px 0 0 18px;">
+        <li>Pernah dibuka di <b>Creative mode</b></li>
+        <li>Pernah mengaktifkan <b>Cheats/Allow Cheats</b></li>
+        <li>Pernah mengaktifkan salah satu <b>Experimental Gameplay</b> toggle</li>
+        <li>World masih memakai <b>behavior pack / resource pack (add-on)</b></li>
+      </ul>
+      <p style="margin-top:6px;">Status "disabled" ini tetap tersimpan di file world meskipun semua opsi di atas sudah dimatikan/dilepas secara manual di dalam game.</p>
       <span class="time">10:00</span>
     </div>
 
@@ -50,7 +57,8 @@
     </div>
 
     <div class="bubble bubble-left warn">
-      <p>⚠️ Selalu <b>backup</b> world kamu dulu sebelum diproses. Tool ini hanya mengubah 1 flag byte di dalam level.dat, file lain di dalam world tidak disentuh.</p>
+      <p>⚠️ Selalu <b>backup</b> world kamu dulu sebelum diproses. Tool ini mengubah beberapa flag di level.dat dan bisa melepas behavior/resource pack dari world.</p>
+      <p style="margin-top:6px;">Jika world kamu bergantung pada blok/item custom dari add-on, atau dibuat dengan Experimental Gameplay, konten tersebut berpotensi berubah jadi "unknown"/hilang setelah pack dilepas. Achievement akan aktif, tapi cek dulu world-nya baik-baik sebelum dipakai permanen.</p>
       <span class="time">10:01</span>
     </div>
 
@@ -64,11 +72,14 @@
       </div>
 
       <div class="info-fix-list">
-        <p style="font-size:12.5px; color:var(--wa-text-muted); margin-bottom:6px;"><b>Tag yang otomatis diperbaiki:</b></p>
+        <p style="font-size:12.5px; color:var(--wa-text-muted); margin-bottom:6px;"><b>Yang otomatis diperbaiki:</b></p>
         <ul style="margin-left:16px; font-size:12.5px; color:var(--wa-text-muted);">
           <li><code>hasBeenLoadedInCreative</code></li>
           <li><code>cheatsEnabled</code></li>
           <li><code>commandsEnabled</code></li>
+          <li><code>experiments_ever_used</code></li>
+          <li><code>saved_with_toggled_experiments</code></li>
+          <li>Melepas behavior pack & resource pack dari world</li>
         </ul>
       </div>
 
