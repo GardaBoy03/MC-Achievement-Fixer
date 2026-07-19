@@ -40,6 +40,53 @@ changelogOverlay.addEventListener('click', (e) => {
   }
 });
 
+/* ---------- BGM: autoplay loop + toggle manual ---------- */
+const bgmAudio = document.getElementById('bgmAudio');
+const musicBtn = document.getElementById('musicBtn');
+
+function updateMusicBtnIcon() {
+  musicBtn.textContent = (bgmAudio.paused) ? '🔇' : '🔊';
+}
+
+function tryAutoplay() {
+  const playPromise = bgmAudio.play();
+  if (playPromise !== undefined) {
+    playPromise
+      .then(() => updateMusicBtnIcon())
+      .catch(() => {
+        // Browser memblokir autoplay dengan suara sebelum ada interaksi user.
+        // Tunggu interaksi pertama (tap/klik di mana saja), lalu coba lagi.
+        updateMusicBtnIcon();
+        const resumeOnInteraction = () => {
+          bgmAudio.play().then(updateMusicBtnIcon).catch(() => {});
+          document.removeEventListener('click', resumeOnInteraction);
+          document.removeEventListener('touchstart', resumeOnInteraction);
+        };
+        document.addEventListener('click', resumeOnInteraction, { once: true });
+        document.addEventListener('touchstart', resumeOnInteraction, { once: true });
+      });
+  }
+}
+
+musicBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (bgmAudio.paused) {
+    bgmAudio.play().catch(() => {});
+  } else {
+    bgmAudio.pause();
+  }
+  updateMusicBtnIcon();
+});
+
+bgmAudio.addEventListener('error', () => {
+  musicBtn.title = 'File BGM.ogg belum ditemukan di Assets/Sounds/';
+  musicBtn.textContent = '🚫';
+  musicBtn.disabled = true;
+});
+
+// Coba autoplay begitu halaman siap
+tryAutoplay();
+
 let selectedFile = null;
 
 /* ---------- UI: pilih file ---------- */

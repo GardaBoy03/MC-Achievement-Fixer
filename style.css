@@ -71,7 +71,6 @@ body{
 }
 
 .changelog-btn{
-  margin-left: auto;
   background: rgba(255,255,255,0.15);
   border: none;
   color: white;
@@ -85,6 +84,10 @@ body{
   justify-content: center;
   transition: background 0.2s ease;
   flex-shrink: 0;
+}
+
+#musicBtn{
+  margin-left: auto;
 }
 
 .changelog-btn:hover{
