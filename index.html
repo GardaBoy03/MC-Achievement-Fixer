@@ -18,7 +18,52 @@
       <h1>MC Achievement Fixer</h1>
       <span class="status-text" id="statusText">online</span>
     </div>
+    <button id="changelogBtn" class="changelog-btn" title="Catatan update">📋</button>
   </header>
+
+  <!-- Panel changelog -->
+  <div class="changelog-overlay" id="changelogOverlay">
+    <div class="changelog-panel">
+      <div class="changelog-header">
+        <span>📋 Catatan Update</span>
+        <button id="closeChangelog" class="changelog-close">✕</button>
+      </div>
+      <div class="changelog-body">
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.7 <span class="changelog-date">19 Jul 2026</span></div>
+          <p>Tambah footer credit developer.</p>
+        </div>
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.6 <span class="changelog-date">19 Jul 2026</span></div>
+          <p>Deteksi & matikan otomatis SEMUA toggle di dalam compound <code>experiments</code>, apa pun namanya — termasuk yang belum dikenal. Terbukti bisa mengaktifkan kembali achievement pada world yang terkunci karena Experimental Gameplay.</p>
+        </div>
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.5 <span class="changelog-date">19 Jul 2026</span></div>
+          <p>Tambah fix <code>GameType</code> (TAG_Int) → dipaksa ke Survival, untuk kasus world masih default Creative.</p>
+        </div>
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.4 <span class="changelog-date">19 Jul 2026</span></div>
+          <p>Tambah fix <code>experiments_ever_used</code> & <code>saved_with_toggled_experiments</code>, plus pelepasan otomatis behavior pack & resource pack dari world.</p>
+        </div>
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.3 <span class="changelog-date">19 Jul 2026</span></div>
+          <p>Perluas fix ke 3 flag utama: <code>hasBeenLoadedInCreative</code>, <code>cheatsEnabled</code>, <code>commandsEnabled</code>.</p>
+        </div>
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.2 <span class="changelog-date">19 Jul 2026</span></div>
+          <p>Perbaikan tampilan mobile: teks path folder panjang tidak lagi overflow keluar bubble.</p>
+        </div>
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.1 <span class="changelog-date">19 Jul 2026</span></div>
+          <p>Upload file world <code>.mcworld</code> langsung (pakai JSZip), tidak perlu ekstrak <code>level.dat</code> manual lagi.</p>
+        </div>
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.0 <span class="changelog-date">19 Jul 2026</span></div>
+          <p>Rilis awal — upload <code>level.dat</code> manual untuk mengaktifkan kembali achievement.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Chat area -->
   <main class="chat-area" id="chatArea">

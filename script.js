@@ -21,6 +21,25 @@ const dropText   = document.getElementById('dropText');
 const processBtn = document.getElementById('processBtn');
 const resultArea = document.getElementById('resultArea');
 
+/* ---------- Panel changelog ---------- */
+const changelogBtn     = document.getElementById('changelogBtn');
+const changelogOverlay = document.getElementById('changelogOverlay');
+const closeChangelog   = document.getElementById('closeChangelog');
+
+changelogBtn.addEventListener('click', () => {
+  changelogOverlay.classList.add('open');
+});
+
+closeChangelog.addEventListener('click', () => {
+  changelogOverlay.classList.remove('open');
+});
+
+changelogOverlay.addEventListener('click', (e) => {
+  if (e.target === changelogOverlay) {
+    changelogOverlay.classList.remove('open');
+  }
+});
+
 let selectedFile = null;
 
 /* ---------- UI: pilih file ---------- */
