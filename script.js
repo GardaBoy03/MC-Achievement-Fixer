@@ -119,6 +119,15 @@ processBtn.addEventListener('click', async () => {
       after: gameTypeResult.found ? 0 : null
     });
 
+    // Matikan SEMUA toggle experimental yang sedang aktif di compound
+    // "experiments" — apa pun namanya (termasuk yang belum diketahui).
+    const expResult = disableAllExperiments(levelDatBytes);
+    report.push({
+      type: 'experiments',
+      found: expResult.found,
+      disabled: expResult.disabled
+    });
+
     // === BAGIAN 2: Lepas behavior pack & resource pack dari world ===
     // Add-on/behavior pack yang masih aktif di sebuah world membuat
     // achievement tetap terkunci walau semua flag di atas sudah 0.
@@ -150,7 +159,8 @@ processBtn.addEventListener('click', async () => {
 
     const anyFlagFound = report.some(r => r.type === 'flag' && r.found);
     const anyPackRemoved = report.some(r => r.type === 'pack' && r.found && r.removedCount !== 0);
-    const anyFound = anyFlagFound || anyPackRemoved;
+    const anyExpDisabled = report.some(r => r.type === 'experiments' && r.disabled && r.disabled.length > 0);
+    const anyFound = anyFlagFound || anyPackRemoved || anyExpDisabled;
 
     if (!anyFound) {
       renderNotFound(report);
@@ -210,6 +220,108 @@ function findLevelDatEntry(zip) {
     }
   });
   return candidate;
+}
+
+/* ---------------------------------------------------------
+   Skip payload NBT generik berdasarkan tipe tag (dipakai untuk
+   melompati tag yang bukan TAG_Byte di dalam compound "experiments",
+   jaga-jaga kalau strukturnya berubah di versi game mendatang).
+   Return: offset setelah payload.
+--------------------------------------------------------- */
+function skipNbtPayload(bytes, offset, type) {
+  switch (type) {
+    case 1: return offset + 1;                     // Byte
+    case 2: return offset + 2;                      // Short
+    case 3: return offset + 4;                      // Int
+    case 4: return offset + 8;                      // Long
+    case 5: return offset + 4;                      // Float
+    case 6: return offset + 8;                      // Double
+    case 7: {                                        // Byte Array
+      const len = readInt32LE(bytes, offset);
+      return offset + 4 + len;
+    }
+    case 8: {                                        // String
+      const len = bytes[offset] | (bytes[offset + 1] << 8);
+      return offset + 2 + len;
+    }
+    case 9: {                                        // List
+      const elemType = bytes[offset];
+      const count = readInt32LE(bytes, offset + 1);
+      let pos = offset + 5;
+      for (let k = 0; k < count; k++) pos = skipNbtPayload(bytes, pos, elemType);
+      return pos;
+    }
+    case 10: {                                       // Compound
+      let pos = offset;
+      while (bytes[pos] !== 0x00) {
+        const childType = bytes[pos];
+        const nameLen = bytes[pos + 1] | (bytes[pos + 2] << 8);
+        const payloadStart = pos + 3 + nameLen;
+        pos = skipNbtPayload(bytes, payloadStart, childType);
+      }
+      return pos + 1; // lewati TAG_End
+    }
+    case 11: {                                       // Int Array
+      const len = readInt32LE(bytes, offset);
+      return offset + 4 + len * 4;
+    }
+    case 12: {                                       // Long Array
+      const len = readInt32LE(bytes, offset);
+      return offset + 4 + len * 8;
+    }
+    default: return offset + 1; // fallback, seharusnya tidak pernah terjadi
+  }
+}
+
+function readInt32LE(bytes, offset) {
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
+}
+
+/* ---------------------------------------------------------
+   Cari TAG_Compound bernama "experiments", lalu matikan (set ke 0)
+   SEMUA TAG_Byte yang ada langsung di dalamnya — apa pun namanya.
+   Ini menangani toggle experimental apa pun yang sedang aktif,
+   termasuk yang belum ada di daftar manual manapun.
+--------------------------------------------------------- */
+function disableAllExperiments(bytes) {
+  const nameBytes = new TextEncoder().encode('experiments');
+  const nameLen = nameBytes.length;
+  const disabled = [];
+
+  for (let i = 0; i < bytes.length - (3 + nameLen); i++) {
+    if (bytes[i] !== 0x0a) continue; // TAG_Compound
+    const len = bytes[i + 1] | (bytes[i + 2] << 8);
+    if (len !== nameLen) continue;
+    let match = true;
+    for (let j = 0; j < nameLen; j++) {
+      if (bytes[i + 3 + j] !== nameBytes[j]) { match = false; break; }
+    }
+    if (!match) continue;
+
+    // Ketemu compound "experiments". Jalan di dalamnya.
+    let pos = i + 3 + nameLen;
+    while (bytes[pos] !== 0x00) {
+      const childType = bytes[pos];
+      const childNameLen = bytes[pos + 1] | (bytes[pos + 2] << 8);
+      const childName = new TextDecoder().decode(bytes.slice(pos + 3, pos + 3 + childNameLen));
+      const payloadStart = pos + 3 + childNameLen;
+
+      if (childType === 0x01) { // TAG_Byte -> ini toggle experiment
+        const before = bytes[payloadStart];
+        if (before !== 0) {
+          bytes[payloadStart] = 0;
+          disabled.push({ name: childName, before });
+        }
+        pos = payloadStart + 1;
+      } else {
+        pos = skipNbtPayload(bytes, payloadStart, childType);
+      }
+    }
+
+    return { found: true, disabled }; // hanya proses compound pertama yang cocok
+  }
+
+  return { found: false, disabled: [] };
 }
 
 /* ---------------------------------------------------------
@@ -287,9 +399,24 @@ function suggestOutputName(originalName) {
 function renderResult(report, blob, outName) {
   const flagResults = report.filter(r => r.type === 'flag');
   const packResults = report.filter(r => r.type === 'pack');
+  const expResults = report.filter(r => r.type === 'experiments');
 
   let html = '<div class="bubble result-bubble">';
   html += '<p><b>✅ World selesai diproses!</b></p>';
+
+  html += '<p style="margin-top:8px; font-size:13px;"><b>Experimental Gameplay:</b></p><ul style="margin:4px 0 0 18px;">';
+  expResults.forEach(r => {
+    if (!r.found) {
+      html += `<li>Compound <code>experiments</code> tidak ditemukan (world tidak pakai experiment)</li>`;
+    } else if (r.disabled.length === 0) {
+      html += `<li>Ditemukan, tapi semua toggle sudah 0 (tidak ada yang aktif)</li>`;
+    } else {
+      r.disabled.forEach(d => {
+        html += `<li><code>${escapeHtml(d.name)}</code>: dimatikan (${d.before} ➜ 0)</li>`;
+      });
+    }
+  });
+  html += '</ul>';
 
   html += '<p style="margin-top:8px; font-size:13px;"><b>Flag di level.dat:</b></p><ul style="margin:4px 0 0 18px;">';
   flagResults.forEach(r => {
@@ -316,6 +443,11 @@ function renderResult(report, blob, outName) {
     }
   });
   html += '</ul>';
+
+  const expDisabledCount = expResults.reduce((sum, r) => sum + (r.disabled ? r.disabled.length : 0), 0);
+  if (expDisabledCount > 0) {
+    html += '<p style="margin-top:8px; font-size:12.5px; color:var(--wa-danger-text);">ℹ️ Toggle experimental di atas berhasil dimatikan di file. <b>Tapi</b> berdasarkan dialog resmi Mojang, world yang pernah dibuat/dipakai dengan experiment aktif tetap permanen tidak bisa dapat achievement — ini murni untuk mematikan efek gameplay experimental-nya, bukan mengembalikan achievement.</p>';
+  }
 
   const packRemoved = packResults.some(r => r.found && r.removedCount !== 0);
   if (packRemoved) {
