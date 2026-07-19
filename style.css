@@ -275,6 +275,14 @@ body{
   text-align: center;
 }
 
+.credit-footer{
+  text-align: center;
+  font-size: 11px;
+  color: #8a9299;
+  margin-top: 8px;
+  letter-spacing: 0.2px;
+}
+
 @media (max-width: 500px){
   .app{
     max-width: 100%;
