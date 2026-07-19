@@ -446,7 +446,7 @@ function renderResult(report, blob, outName) {
 
   const expDisabledCount = expResults.reduce((sum, r) => sum + (r.disabled ? r.disabled.length : 0), 0);
   if (expDisabledCount > 0) {
-    html += '<p style="margin-top:8px; font-size:12.5px; color:var(--wa-danger-text);">ℹ️ Toggle experimental di atas berhasil dimatikan di file. <b>Tapi</b> berdasarkan dialog resmi Mojang, world yang pernah dibuat/dipakai dengan experiment aktif tetap permanen tidak bisa dapat achievement — ini murni untuk mematikan efek gameplay experimental-nya, bukan mengembalikan achievement.</p>';
+    html += '<p style="margin-top:8px; font-size:12.5px; color:var(--wa-teal-green);">✅ Toggle experimental di atas berhasil dimatikan di file. Berdasarkan pengujian, mematikan toggle ini <b>terbukti bisa mengaktifkan kembali achievement</b> untuk world yang sebelumnya terkunci karena Experimental Gameplay — walau dialog resmi Mojang menyebutnya permanen. Hasil bisa bervariasi tergantung versi game/perangkat, jadi tetap cek notifikasi achievement setelah masuk ke world.</p>';
   }
 
   const packRemoved = packResults.some(r => r.found && r.removedCount !== 0);
