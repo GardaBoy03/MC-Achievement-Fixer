@@ -40,39 +40,55 @@ changelogOverlay.addEventListener('click', (e) => {
   }
 });
 
-/* ---------- BGM: autoplay loop + toggle manual ---------- */
+/* ---------- BGM: true autoplay via trik muted -> unmute ---------- */
 const bgmAudio = document.getElementById('bgmAudio');
 const musicBtn = document.getElementById('musicBtn');
 
-function updateMusicBtnIcon() {
-  musicBtn.textContent = (bgmAudio.paused) ? '🔇' : '🔊';
-}
+let userPaused = false; // true kalau user sengaja pause manual
 
-function tryAutoplay() {
-  const playPromise = bgmAudio.play();
-  if (playPromise !== undefined) {
-    playPromise
-      .then(() => updateMusicBtnIcon())
-      .catch(() => {
-        // Browser memblokir autoplay dengan suara sebelum ada interaksi user.
-        // Tunggu interaksi pertama (tap/klik di mana saja), lalu coba lagi.
-        updateMusicBtnIcon();
-        const resumeOnInteraction = () => {
-          bgmAudio.play().then(updateMusicBtnIcon).catch(() => {});
-          document.removeEventListener('click', resumeOnInteraction);
-          document.removeEventListener('touchstart', resumeOnInteraction);
-        };
-        document.addEventListener('click', resumeOnInteraction, { once: true });
-        document.addEventListener('touchstart', resumeOnInteraction, { once: true });
-      });
+function updateMusicBtnIcon() {
+  if (bgmAudio.paused) {
+    musicBtn.textContent = '🔇';
+  } else {
+    musicBtn.textContent = bgmAudio.muted ? '🔈' : '🔊';
   }
 }
 
-musicBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
+function unmuteOnFirstInteraction() {
+  if (userPaused) return; // user sudah pause manual, jangan dipaksa nyala lagi
+  bgmAudio.muted = false;
   if (bgmAudio.paused) {
     bgmAudio.play().catch(() => {});
+  }
+  updateMusicBtnIcon();
+}
+
+// Autoplay dalam kondisi muted -> ini SELALU diizinkan browser tanpa interaksi.
+// Musik jadi beneran mulai jalan dari awal halaman dibuka, cuma senyap
+// sampai ada interaksi pertama (klik/tap), lalu otomatis unmute.
+bgmAudio.muted = true;
+bgmAudio.play()
+  .then(() => updateMusicBtnIcon())
+  .catch(() => {
+    // Sangat jarang terjadi, tapi jaga-jaga: coba lagi saat interaksi pertama
+    updateMusicBtnIcon();
+  });
+
+document.addEventListener('click', unmuteOnFirstInteraction, { once: true });
+document.addEventListener('touchstart', unmuteOnFirstInteraction, { once: true });
+
+musicBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+
+  if (bgmAudio.paused) {
+    userPaused = false;
+    bgmAudio.muted = false;
+    bgmAudio.play().catch(() => {});
+  } else if (bgmAudio.muted) {
+    // Masih senyap (belum ada interaksi lain) -> tap tombol ini langsung unmute
+    bgmAudio.muted = false;
   } else {
+    userPaused = true;
     bgmAudio.pause();
   }
   updateMusicBtnIcon();
@@ -83,9 +99,6 @@ bgmAudio.addEventListener('error', () => {
   musicBtn.textContent = '🚫';
   musicBtn.disabled = true;
 });
-
-// Coba autoplay begitu halaman siap
-tryAutoplay();
 
 let selectedFile = null;
 
