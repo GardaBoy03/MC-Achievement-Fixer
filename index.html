@@ -19,6 +19,7 @@
       <span class="status-text" id="statusText">online</span>
     </div>
     <button id="musicBtn" class="changelog-btn" title="Putar/pause musik">🔇</button>
+    <a id="feedbackBtn" class="changelog-btn" href="https://mail.google.com/mail/?view=cm&fs=1&to=fmuhammadgarda@gmail.com&su=Feedback%20MC%20Achievement%20Fixer" target="_blank" rel="noopener" title="Kirim feedback ke developer">✉️</a>
     <button id="changelogBtn" class="changelog-btn" title="Catatan update">📋</button>
   </header>
 
@@ -32,6 +33,14 @@
         <button id="closeChangelog" class="changelog-close">✕</button>
       </div>
       <div class="changelog-body">
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.9 <span class="changelog-date">27 Jul 2026</span></div>
+          <p>Tambah tombol ✉️ feedback di pojok kanan atas, langsung buka email ke developer.</p>
+        </div>
+        <div class="changelog-entry">
+          <div class="changelog-version">v1.8 <span class="changelog-date">27 Jul 2026</span></div>
+          <p>Ganti daftar "Yang otomatis diperbaiki" jadi tombol toggle on/off (default semua aktif), biar bisa pilih sendiri fix mana yang mau dijalankan sebelum proses world.</p>
+        </div>
         <div class="changelog-entry">
           <div class="changelog-version">v1.7.1 <span class="changelog-date">21 Jul 2026</span></div>
           <p>Tambah Fitur auto/pause music, agar tidak sepi :v</p>
@@ -124,18 +133,49 @@
       </div>
 
       <div class="info-fix-list">
-        <p style="font-size:12.5px; color:var(--wa-text-muted); margin-bottom:6px;"><b>Yang otomatis diperbaiki:</b></p>
-        <ul style="margin-left:16px; font-size:12.5px; color:var(--wa-text-muted);">
-          <li><code>hasBeenLoadedInCreative</code></li>
-          <li><code>cheatsEnabled</code></li>
-          <li><code>commandsEnabled</code></li>
-          <li><code>experiments_ever_used</code></li>
-          <li><code>saved_with_toggled_experiments</code></li>
-          <li><code>GameType</code> → dipaksa ke Survival</li>
-          <li>Semua toggle di dalam <code>experiments</code> dimatikan (apa pun namanya, otomatis terdeteksi)</li>
-          <li>Melepas behavior pack & resource pack dari world</li>
-        </ul>
+        <p style="font-size:12.5px; color:var(--wa-text-muted); margin-bottom:8px;"><b>Yang otomatis diperbaiki:</b> <span style="font-weight:400;">(default semua aktif, matikan yang tidak diinginkan)</span></p>
+
+        <label class="toggle-row">
+          <span class="toggle-label"><code>hasBeenLoadedInCreative</code></span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="hasBeenLoadedInCreative" checked><span class="slider"></span></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label"><code>cheatsEnabled</code></span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="cheatsEnabled" checked><span class="slider"></span></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label"><code>commandsEnabled</code></span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="commandsEnabled" checked><span class="slider"></span></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label"><code>experiments_ever_used</code></span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="experiments_ever_used" checked><span class="slider"></span></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label"><code>saved_with_toggled_experiments</code></span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="saved_with_toggled_experiments" checked><span class="slider"></span></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label"><code>GameType</code> → dipaksa ke Survival</span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="gameType" checked><span class="slider"></span></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label">Semua toggle di dalam <code>experiments</code> dimatikan (apa pun namanya, otomatis terdeteksi)</span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="experiments" checked><span class="slider"></span></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label">Melepas behavior pack & resource pack dari world</span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="packs" checked><span class="slider"></span></span>
+        </label>
       </div>
+
 
       <button id="processBtn" class="btn-main" disabled>Proses World & Aktifkan Achievement</button>
     </div>

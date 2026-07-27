@@ -129,6 +129,14 @@ fileInput.addEventListener('change', (e) => {
   }
 });
 
+function getFixToggles() {
+  const toggles = {};
+  document.querySelectorAll('.fix-toggle').forEach(input => {
+    toggles[input.dataset.fix] = input.checked;
+  });
+  return toggles;
+}
+
 function handleFileSelected(file) {
   selectedFile = file;
   dropText.innerHTML = `<span class="file-selected">✅ ${escapeHtml(file.name)}</span> (${(file.size/1024).toFixed(1)} KB)`;
@@ -144,6 +152,7 @@ processBtn.addEventListener('click', async () => {
   processBtn.textContent = 'Memproses world...';
 
   try {
+    const toggles = getFixToggles();
     const arrayBuffer = await selectedFile.arrayBuffer();
 
     // Buka .mcworld sebagai arsip zip
@@ -173,7 +182,7 @@ processBtn.addEventListener('click', async () => {
       'commandsEnabled',
       'experiments_ever_used',
       'saved_with_toggled_experiments'
-    ];
+    ].filter(tagName => toggles[tagName]);
 
     tagsToFix.forEach(tagName => {
       const result = setNamedByteTag(levelDatBytes, tagName, 0);
@@ -189,50 +198,56 @@ processBtn.addEventListener('click', async () => {
     // GameType (TAG_Int) -> 0 (Survival). Kalau world saat ini masih
     // default Creative, achievement tidak akan bisa didapat walau
     // semua flag riwayat di atas sudah 0.
-    const gameTypeResult = setNamedIntTag(levelDatBytes, 'GameType', 0);
-    report.push({
-      type: 'flag',
-      name: 'GameType (mode dipaksa ke Survival)',
-      found: gameTypeResult.found,
-      before: gameTypeResult.found ? gameTypeResult.before : null,
-      after: gameTypeResult.found ? 0 : null
-    });
+    if (toggles.gameType) {
+      const gameTypeResult = setNamedIntTag(levelDatBytes, 'GameType', 0);
+      report.push({
+        type: 'flag',
+        name: 'GameType (mode dipaksa ke Survival)',
+        found: gameTypeResult.found,
+        before: gameTypeResult.found ? gameTypeResult.before : null,
+        after: gameTypeResult.found ? 0 : null
+      });
+    }
 
     // Matikan SEMUA toggle experimental yang sedang aktif di compound
     // "experiments" — apa pun namanya (termasuk yang belum diketahui).
-    const expResult = disableAllExperiments(levelDatBytes);
-    report.push({
-      type: 'experiments',
-      found: expResult.found,
-      disabled: expResult.disabled
-    });
+    if (toggles.experiments) {
+      const expResult = disableAllExperiments(levelDatBytes);
+      report.push({
+        type: 'experiments',
+        found: expResult.found,
+        disabled: expResult.disabled
+      });
+    }
 
     // === BAGIAN 2: Lepas behavior pack & resource pack dari world ===
     // Add-on/behavior pack yang masih aktif di sebuah world membuat
     // achievement tetap terkunci walau semua flag di atas sudah 0.
-    const packFiles = ['world_behavior_packs.json', 'world_resource_packs.json'];
+    if (toggles.packs) {
+      const packFiles = ['world_behavior_packs.json', 'world_resource_packs.json'];
 
-    for (const fileName of packFiles) {
-      const entry = findEntryByName(zip, fileName);
-      if (!entry) {
-        report.push({ type: 'pack', name: fileName, found: false });
-        continue;
-      }
+      for (const fileName of packFiles) {
+        const entry = findEntryByName(zip, fileName);
+        if (!entry) {
+          report.push({ type: 'pack', name: fileName, found: false });
+          continue;
+        }
 
-      const text = await entry.async('string');
-      let packCount = 0;
-      try {
-        const parsed = JSON.parse(text);
-        packCount = Array.isArray(parsed) ? parsed.length : 0;
-      } catch (e) {
-        packCount = text.trim().length > 2 ? -1 : 0; // -1 = tidak bisa diparse tapi ada isi
-      }
+        const text = await entry.async('string');
+        let packCount = 0;
+        try {
+          const parsed = JSON.parse(text);
+          packCount = Array.isArray(parsed) ? parsed.length : 0;
+        } catch (e) {
+          packCount = text.trim().length > 2 ? -1 : 0; // -1 = tidak bisa diparse tapi ada isi
+        }
 
-      if (packCount > 0 || packCount === -1) {
-        zip.file(entry.name, '[]');
-        report.push({ type: 'pack', name: fileName, found: true, removedCount: packCount });
-      } else {
-        report.push({ type: 'pack', name: fileName, found: true, removedCount: 0 });
+        if (packCount > 0 || packCount === -1) {
+          zip.file(entry.name, '[]');
+          report.push({ type: 'pack', name: fileName, found: true, removedCount: packCount });
+        } else {
+          report.push({ type: 'pack', name: fileName, found: true, removedCount: 0 });
+        }
       }
     }
 
