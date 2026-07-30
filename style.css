@@ -319,6 +319,52 @@ a.changelog-btn{
   accent-color: var(--wa-teal-green);
 }
 
+.rename-box{
+  background: #F7F7F7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 10px 0;
+}
+
+.rename-label{
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--wa-text-dark);
+  margin-bottom: 6px;
+}
+
+.rename-input{
+  width: 100%;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--wa-text-dark);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.rename-input:focus{
+  border-color: var(--wa-teal-green);
+}
+
+.rename-hint{
+  font-size: 11.5px;
+  color: var(--wa-text-muted);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.rename-hint code{
+  background: #eee;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #d63384;
+}
+
 .info-fix-list{
   background: #F7F7F7;
   border-radius: 8px;

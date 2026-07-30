@@ -34,6 +34,10 @@
       </div>
       <div class="changelog-body">
         <div class="changelog-entry">
+          <div class="changelog-version">v2.0 <span class="changelog-date">30 Jul 2026</span></div>
+          <p>Tambah fitur <b>rename world</b> sebelum diproses. Nama baru akan diterapkan ke tag <code>LevelName</code> di level.dat dan file <code>levelname.txt</code> (kalau ada), jadi world langsung tampil dengan nama baru di daftar world Minecraft.</p>
+        </div>
+        <div class="changelog-entry">
           <div class="changelog-version">v1.9 <span class="changelog-date">27 Jul 2026</span></div>
           <p>Tambah tombol ✉️ feedback di pojok kanan atas, langsung buka email ke developer.</p>
         </div>
@@ -132,6 +136,12 @@
         <p id="dropText">Tap untuk pilih file .mcworld, atau drag & drop di sini</p>
       </div>
 
+      <div class="rename-box">
+        <label for="renameInput" class="rename-label">✏️ Rename world (opsional)</label>
+        <input type="text" id="renameInput" class="rename-input" placeholder="Kosongkan jika tidak ingin rename" maxlength="80">
+        <p class="rename-hint">Nama baru akan diterapkan ke <code>LevelName</code> di level.dat & <code>levelname.txt</code> (kalau ada).</p>
+      </div>
+
       <div class="info-fix-list">
         <p style="font-size:12.5px; color:var(--wa-text-muted); margin-bottom:8px;"><b>Yang otomatis diperbaiki:</b> <span style="font-weight:400;">(default semua aktif, matikan yang tidak diinginkan)</span></p>
 
@@ -151,22 +161,12 @@
         </label>
 
         <label class="toggle-row">
-          <span class="toggle-label"><code>experiments_ever_used</code></span>
-          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="experiments_ever_used" checked><span class="slider"></span></span>
-        </label>
-
-        <label class="toggle-row">
-          <span class="toggle-label"><code>saved_with_toggled_experiments</code></span>
-          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="saved_with_toggled_experiments" checked><span class="slider"></span></span>
-        </label>
-
-        <label class="toggle-row">
           <span class="toggle-label"><code>GameType</code> → dipaksa ke Survival</span>
           <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="gameType" checked><span class="slider"></span></span>
         </label>
 
         <label class="toggle-row">
-          <span class="toggle-label">Semua toggle di dalam <code>experiments</code> dimatikan (apa pun namanya, otomatis terdeteksi)</span>
+          <span class="toggle-label"><code>experiments_ever_used</code>, <code>saved_with_toggled_experiments</code>, & semua toggle di dalam <code>experiments</code> dimatikan (apa pun namanya, otomatis terdeteksi)</span>
           <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="experiments" checked><span class="slider"></span></span>
         </label>
 

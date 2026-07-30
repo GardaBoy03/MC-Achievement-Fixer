@@ -15,11 +15,12 @@
    tidak ada data yang dikirim ke server manapun.
    ========================================================= */
 
-const dropzone   = document.getElementById('dropzone');
-const fileInput  = document.getElementById('fileInput');
-const dropText   = document.getElementById('dropText');
-const processBtn = document.getElementById('processBtn');
-const resultArea = document.getElementById('resultArea');
+const dropzone    = document.getElementById('dropzone');
+const fileInput   = document.getElementById('fileInput');
+const dropText    = document.getElementById('dropText');
+const processBtn  = document.getElementById('processBtn');
+const resultArea  = document.getElementById('resultArea');
+const renameInput = document.getElementById('renameInput');
 
 /* ---------- Panel changelog ---------- */
 const changelogBtn     = document.getElementById('changelogBtn');
@@ -166,23 +167,50 @@ processBtn.addEventListener('click', async () => {
       return;
     }
 
-    const levelDatBytes = await levelDatEntry.async('uint8array');
+    let levelDatBytes = await levelDatEntry.async('uint8array');
 
     const report = [];
+
+    // === BAGIAN 0: Rename world (opsional) ===
+    // LevelName adalah TAG_String, panjangnya bisa beda dari nama lama,
+    // jadi butuh rebuild buffer (bukan sekadar ganti byte in-place).
+    const newWorldName = renameInput.value.trim();
+    if (newWorldName) {
+      const renameResult = setNamedStringTag(levelDatBytes, 'LevelName', newWorldName);
+      if (renameResult.found) {
+        levelDatBytes = renameResult.bytes;
+      }
+      report.push({
+        type: 'rename',
+        found: renameResult.found,
+        before: renameResult.before,
+        after: newWorldName
+      });
+
+      // Beberapa world juga menyimpan nama di levelname.txt terpisah
+      const levelNameTxtEntry = findEntryByName(zip, 'levelname.txt');
+      if (levelNameTxtEntry) {
+        zip.file(levelNameTxtEntry.name, newWorldName);
+      }
+    }
 
     // === BAGIAN 1: Flag byte di level.dat ===
     // - hasBeenLoadedInCreative -> world pernah dibuka di Creative mode
     // - cheatsEnabled / commandsEnabled -> "Allow Cheats" pernah ON
     // - experiments_ever_used / saved_with_toggled_experiments -> pernah
     //   mengaktifkan salah satu Experimental Gameplay toggle (flag ini
-    //   muncul otomatis begitu experiment pernah dinyalakan sekali saja)
+    //   muncul otomatis begitu experiment pernah dinyalakan sekali saja).
+    //   Kedua flag ini digabung dengan toggle "experiments" di UI karena
+    //   sama-sama soal riwayat Experimental Gameplay.
     const tagsToFix = [
       'hasBeenLoadedInCreative',
       'cheatsEnabled',
-      'commandsEnabled',
-      'experiments_ever_used',
-      'saved_with_toggled_experiments'
+      'commandsEnabled'
     ].filter(tagName => toggles[tagName]);
+
+    if (toggles.experiments) {
+      tagsToFix.push('experiments_ever_used', 'saved_with_toggled_experiments');
+    }
 
     tagsToFix.forEach(tagName => {
       const result = setNamedByteTag(levelDatBytes, tagName, 0);
@@ -254,7 +282,8 @@ processBtn.addEventListener('click', async () => {
     const anyFlagFound = report.some(r => r.type === 'flag' && r.found);
     const anyPackRemoved = report.some(r => r.type === 'pack' && r.found && r.removedCount !== 0);
     const anyExpDisabled = report.some(r => r.type === 'experiments' && r.disabled && r.disabled.length > 0);
-    const anyFound = anyFlagFound || anyPackRemoved || anyExpDisabled;
+    const anyRenamed = report.some(r => r.type === 'rename' && r.found);
+    const anyFound = anyFlagFound || anyPackRemoved || anyExpDisabled || anyRenamed;
 
     if (!anyFound) {
       renderNotFound(report);
@@ -271,7 +300,9 @@ processBtn.addEventListener('click', async () => {
       compressionOptions: { level: 6 }
     });
 
-    const outName = suggestOutputName(selectedFile.name);
+    const outName = newWorldName
+      ? suggestOutputName(newWorldName + '.mcworld')
+      : suggestOutputName(selectedFile.name);
     renderResult(report, outBlob, outName);
 
   } catch (err) {
@@ -451,6 +482,52 @@ function setNamedIntTag(bytes, tagName, newValue) {
 }
 
 /* ---------------------------------------------------------
+   Mencari tag NBT bertipe TAG_String (type 0x08) dengan nama
+   tertentu (mis. "LevelName"), lalu mengganti isinya dengan
+   string baru. Karena panjang string baru bisa berbeda dari
+   yang lama, fungsi ini me-rebuild seluruh buffer (bukan
+   in-place seperti TAG_Byte/TAG_Int).
+   Format tag: [type=0x08][nameLen:int16 LE][name bytes]
+               [strLen:int16 LE][string bytes]
+--------------------------------------------------------- */
+function setNamedStringTag(bytes, tagName, newValue) {
+  const nameBytes = new TextEncoder().encode(tagName);
+  const nameLen = nameBytes.length;
+
+  for (let i = 0; i < bytes.length - (3 + nameLen + 2); i++) {
+    if (bytes[i] !== 0x08) continue; // TAG_String
+
+    const len = bytes[i + 1] | (bytes[i + 2] << 8);
+    if (len !== nameLen) continue;
+
+    let match = true;
+    for (let j = 0; j < nameLen; j++) {
+      if (bytes[i + 3 + j] !== nameBytes[j]) { match = false; break; }
+    }
+    if (!match) continue;
+
+    const payloadIndex = i + 3 + nameLen;
+    const oldStrLen = bytes[payloadIndex] | (bytes[payloadIndex + 1] << 8);
+    const oldValue = new TextDecoder().decode(bytes.slice(payloadIndex + 2, payloadIndex + 2 + oldStrLen));
+    const payloadEnd = payloadIndex + 2 + oldStrLen;
+
+    const newNameValueBytes = new TextEncoder().encode(newValue);
+    const newStrLen = newNameValueBytes.length;
+
+    const newBytes = new Uint8Array(bytes.length - (payloadEnd - payloadIndex) + (2 + newStrLen));
+    newBytes.set(bytes.subarray(0, payloadIndex), 0);
+    newBytes[payloadIndex] = newStrLen & 0xff;
+    newBytes[payloadIndex + 1] = (newStrLen >> 8) & 0xff;
+    newBytes.set(newNameValueBytes, payloadIndex + 2);
+    newBytes.set(bytes.subarray(payloadEnd), payloadIndex + 2 + newStrLen);
+
+    return { found: true, before: oldValue, bytes: newBytes };
+  }
+
+  return { found: false, before: null, bytes };
+}
+
+/* ---------------------------------------------------------
    Mencari tag NBT bertipe TAG_Byte dengan nama tertentu,
    lalu mengubah nilai payload-nya (in-place pada buffer).
    Format tag: [type=0x01][nameLen:int16 LE][name bytes][value:1 byte]
@@ -495,8 +572,20 @@ function renderResult(report, blob, outName) {
   const packResults = report.filter(r => r.type === 'pack');
   const expResults = report.filter(r => r.type === 'experiments');
 
+  const renameResult = report.find(r => r.type === 'rename');
+
   let html = '<div class="bubble result-bubble">';
   html += '<p><b>✅ World selesai diproses!</b></p>';
+
+  if (renameResult) {
+    html += '<p style="margin-top:8px; font-size:13px;"><b>Rename World:</b></p><ul style="margin:4px 0 0 18px;">';
+    if (renameResult.found) {
+      html += `<li><code>LevelName</code>: "${escapeHtml(renameResult.before)}" ➜ "${escapeHtml(renameResult.after)}"</li>`;
+    } else {
+      html += `<li><code>LevelName</code>: tag tidak ditemukan, rename dilewati</li>`;
+    }
+    html += '</ul>';
+  }
 
   html += '<p style="margin-top:8px; font-size:13px;"><b>Experimental Gameplay:</b></p><ul style="margin:4px 0 0 18px;">';
   expResults.forEach(r => {
