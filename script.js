@@ -1,5 +1,5 @@
 /* =========================================================
-   MC Achievement Fixer
+   MC Achievement Fixer (Vue 3)
    Upload file world Minecraft Bedrock (.mcworld) secara utuh.
    .mcworld sebenarnya adalah file ZIP berisi level.dat, db/,
    world_behavior_packs.json, dsb. Tool ini:
@@ -13,310 +13,10 @@
 
    Semua proses berjalan 100% di browser (client-side),
    tidak ada data yang dikirim ke server manapun.
+
+   UI di-render pakai Vue 3 (reactive state), sementara semua
+   logika parsing NBT tetap fungsi murni di luar instance Vue.
    ========================================================= */
-
-const dropzone    = document.getElementById('dropzone');
-const fileInput   = document.getElementById('fileInput');
-const dropText    = document.getElementById('dropText');
-const processBtn  = document.getElementById('processBtn');
-const resultArea  = document.getElementById('resultArea');
-const renameInput = document.getElementById('renameInput');
-
-/* ---------- Panel changelog ---------- */
-const changelogBtn     = document.getElementById('changelogBtn');
-const changelogOverlay = document.getElementById('changelogOverlay');
-const closeChangelog   = document.getElementById('closeChangelog');
-
-changelogBtn.addEventListener('click', () => {
-  changelogOverlay.classList.add('open');
-});
-
-closeChangelog.addEventListener('click', () => {
-  changelogOverlay.classList.remove('open');
-});
-
-changelogOverlay.addEventListener('click', (e) => {
-  if (e.target === changelogOverlay) {
-    changelogOverlay.classList.remove('open');
-  }
-});
-
-/* ---------- BGM: true autoplay via trik muted -> unmute ---------- */
-const bgmAudio = document.getElementById('bgmAudio');
-const musicBtn = document.getElementById('musicBtn');
-
-let userPaused = false; // true kalau user sengaja pause manual
-
-function updateMusicBtnIcon() {
-  if (bgmAudio.paused) {
-    musicBtn.textContent = '🔇';
-  } else {
-    musicBtn.textContent = bgmAudio.muted ? '🔈' : '🔊';
-  }
-}
-
-function unmuteOnFirstInteraction() {
-  if (userPaused) return; // user sudah pause manual, jangan dipaksa nyala lagi
-  bgmAudio.muted = false;
-  if (bgmAudio.paused) {
-    bgmAudio.play().catch(() => {});
-  }
-  updateMusicBtnIcon();
-}
-
-// Autoplay dalam kondisi muted -> ini SELALU diizinkan browser tanpa interaksi.
-// Musik jadi beneran mulai jalan dari awal halaman dibuka, cuma senyap
-// sampai ada interaksi pertama (klik/tap), lalu otomatis unmute.
-bgmAudio.muted = true;
-bgmAudio.play()
-  .then(() => updateMusicBtnIcon())
-  .catch(() => {
-    // Sangat jarang terjadi, tapi jaga-jaga: coba lagi saat interaksi pertama
-    updateMusicBtnIcon();
-  });
-
-document.addEventListener('click', unmuteOnFirstInteraction, { once: true });
-document.addEventListener('touchstart', unmuteOnFirstInteraction, { once: true });
-
-musicBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-
-  if (bgmAudio.paused) {
-    userPaused = false;
-    bgmAudio.muted = false;
-    bgmAudio.play().catch(() => {});
-  } else if (bgmAudio.muted) {
-    // Masih senyap (belum ada interaksi lain) -> tap tombol ini langsung unmute
-    bgmAudio.muted = false;
-  } else {
-    userPaused = true;
-    bgmAudio.pause();
-  }
-  updateMusicBtnIcon();
-});
-
-bgmAudio.addEventListener('error', () => {
-  musicBtn.title = 'File BGM.ogg belum ditemukan di Assets/Sounds/';
-  musicBtn.textContent = '🚫';
-  musicBtn.disabled = true;
-});
-
-let selectedFile = null;
-
-/* ---------- UI: pilih file ---------- */
-
-dropzone.addEventListener('click', () => fileInput.click());
-
-dropzone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropzone.classList.add('dragover');
-});
-
-dropzone.addEventListener('dragleave', () => {
-  dropzone.classList.remove('dragover');
-});
-
-dropzone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropzone.classList.remove('dragover');
-  if (e.dataTransfer.files.length > 0) {
-    handleFileSelected(e.dataTransfer.files[0]);
-  }
-});
-
-fileInput.addEventListener('change', (e) => {
-  if (e.target.files.length > 0) {
-    handleFileSelected(e.target.files[0]);
-  }
-});
-
-function getFixToggles() {
-  const toggles = {};
-  document.querySelectorAll('.fix-toggle').forEach(input => {
-    toggles[input.dataset.fix] = input.checked;
-  });
-  return toggles;
-}
-
-function handleFileSelected(file) {
-  selectedFile = file;
-  dropText.innerHTML = `<span class="file-selected">✅ ${escapeHtml(file.name)}</span> (${(file.size/1024).toFixed(1)} KB)`;
-  processBtn.disabled = false;
-}
-
-/* ---------- Proses utama ---------- */
-
-processBtn.addEventListener('click', async () => {
-  if (!selectedFile) return;
-
-  processBtn.disabled = true;
-  processBtn.textContent = 'Memproses world...';
-
-  try {
-    const toggles = getFixToggles();
-    const arrayBuffer = await selectedFile.arrayBuffer();
-
-    // Buka .mcworld sebagai arsip zip
-    const zip = await JSZip.loadAsync(arrayBuffer);
-
-    // Cari entry level.dat (biasanya di root, tapi cari juga kalau nested)
-    const levelDatEntry = findLevelDatEntry(zip);
-
-    if (!levelDatEntry) {
-      renderError('File level.dat tidak ditemukan di dalam world ini. Pastikan file yang diupload adalah .mcworld / hasil zip folder world yang valid (bukan zip kosong atau salah folder).');
-      return;
-    }
-
-    let levelDatBytes = await levelDatEntry.async('uint8array');
-
-    const report = [];
-
-    // === BAGIAN 0: Rename world (opsional) ===
-    // LevelName adalah TAG_String, panjangnya bisa beda dari nama lama,
-    // jadi butuh rebuild buffer (bukan sekadar ganti byte in-place).
-    const newWorldName = renameInput.value.trim();
-    if (newWorldName) {
-      const renameResult = setNamedStringTag(levelDatBytes, 'LevelName', newWorldName);
-      if (renameResult.found) {
-        levelDatBytes = renameResult.bytes;
-      }
-      report.push({
-        type: 'rename',
-        found: renameResult.found,
-        before: renameResult.before,
-        after: newWorldName
-      });
-
-      // Beberapa world juga menyimpan nama di levelname.txt terpisah
-      const levelNameTxtEntry = findEntryByName(zip, 'levelname.txt');
-      if (levelNameTxtEntry) {
-        zip.file(levelNameTxtEntry.name, newWorldName);
-      }
-    }
-
-    // === BAGIAN 1: Flag byte di level.dat ===
-    // - hasBeenLoadedInCreative -> world pernah dibuka di Creative mode
-    // - cheatsEnabled / commandsEnabled -> "Allow Cheats" pernah ON
-    // - experiments_ever_used / saved_with_toggled_experiments -> pernah
-    //   mengaktifkan salah satu Experimental Gameplay toggle (flag ini
-    //   muncul otomatis begitu experiment pernah dinyalakan sekali saja).
-    //   Kedua flag ini digabung dengan toggle "experiments" di UI karena
-    //   sama-sama soal riwayat Experimental Gameplay.
-    const tagsToFix = [
-      'hasBeenLoadedInCreative',
-      'cheatsEnabled',
-      'commandsEnabled'
-    ].filter(tagName => toggles[tagName]);
-
-    if (toggles.experiments) {
-      tagsToFix.push('experiments_ever_used', 'saved_with_toggled_experiments');
-    }
-
-    if (toggles.education) {
-      tagsToFix.push('educationFeaturesEnabled');
-    }
-
-    tagsToFix.forEach(tagName => {
-      const result = setNamedByteTag(levelDatBytes, tagName, 0);
-      report.push({
-        type: 'flag',
-        name: tagName,
-        found: result.found,
-        before: result.before,
-        after: result.found ? 0 : null
-      });
-    });
-
-    // GameType (TAG_Int) -> 0 (Survival). Kalau world saat ini masih
-    // default Creative, achievement tidak akan bisa didapat walau
-    // semua flag riwayat di atas sudah 0.
-    if (toggles.gameType) {
-      const gameTypeResult = setNamedIntTag(levelDatBytes, 'GameType', 0);
-      report.push({
-        type: 'flag',
-        name: 'GameType (mode dipaksa ke Survival)',
-        found: gameTypeResult.found,
-        before: gameTypeResult.found ? gameTypeResult.before : null,
-        after: gameTypeResult.found ? 0 : null
-      });
-    }
-
-    // Matikan SEMUA toggle experimental yang sedang aktif di compound
-    // "experiments" — apa pun namanya (termasuk yang belum diketahui).
-    if (toggles.experiments) {
-      const expResult = disableAllExperiments(levelDatBytes);
-      report.push({
-        type: 'experiments',
-        found: expResult.found,
-        disabled: expResult.disabled
-      });
-    }
-
-    // === BAGIAN 2: Lepas behavior pack & resource pack dari world ===
-    // Add-on/behavior pack yang masih aktif di sebuah world membuat
-    // achievement tetap terkunci walau semua flag di atas sudah 0.
-    if (toggles.packs) {
-      const packFiles = ['world_behavior_packs.json', 'world_resource_packs.json'];
-
-      for (const fileName of packFiles) {
-        const entry = findEntryByName(zip, fileName);
-        if (!entry) {
-          report.push({ type: 'pack', name: fileName, found: false });
-          continue;
-        }
-
-        const text = await entry.async('string');
-        let packCount = 0;
-        try {
-          const parsed = JSON.parse(text);
-          packCount = Array.isArray(parsed) ? parsed.length : 0;
-        } catch (e) {
-          packCount = text.trim().length > 2 ? -1 : 0; // -1 = tidak bisa diparse tapi ada isi
-        }
-
-        if (packCount > 0 || packCount === -1) {
-          zip.file(entry.name, '[]');
-          report.push({ type: 'pack', name: fileName, found: true, removedCount: packCount });
-        } else {
-          report.push({ type: 'pack', name: fileName, found: true, removedCount: 0 });
-        }
-      }
-    }
-
-    const anyFlagFound = report.some(r => r.type === 'flag' && r.found);
-    const anyPackRemoved = report.some(r => r.type === 'pack' && r.found && r.removedCount !== 0);
-    const anyExpDisabled = report.some(r => r.type === 'experiments' && r.disabled && r.disabled.length > 0);
-    const anyRenamed = report.some(r => r.type === 'rename' && r.found);
-    const anyFound = anyFlagFound || anyPackRemoved || anyExpDisabled || anyRenamed;
-
-    if (!anyFound) {
-      renderNotFound(report);
-      return;
-    }
-
-    // Tulis kembali level.dat yang sudah dimodifikasi ke dalam zip
-    zip.file(levelDatEntry.name, levelDatBytes);
-
-    // Generate ulang file .mcworld
-    const outBlob = await zip.generateAsync({
-      type: 'blob',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
-    });
-
-    const outName = newWorldName
-      ? suggestOutputName(newWorldName + '.mcworld')
-      : suggestOutputName(selectedFile.name);
-    renderResult(report, outBlob, outName);
-
-  } catch (err) {
-    console.error(err);
-    renderError('Terjadi kesalahan saat membaca file. Pastikan file yang diupload adalah .mcworld / .zip world yang valid dan tidak corrupt.');
-  } finally {
-    processBtn.disabled = false;
-    processBtn.textContent = 'Proses World & Aktifkan Achievement';
-  }
-});
 
 /* ---------------------------------------------------------
    Cari entry file apapun berdasarkan nama persis (case-insensitive),
@@ -486,52 +186,6 @@ function setNamedIntTag(bytes, tagName, newValue) {
 }
 
 /* ---------------------------------------------------------
-   Mencari tag NBT bertipe TAG_String (type 0x08) dengan nama
-   tertentu (mis. "LevelName"), lalu mengganti isinya dengan
-   string baru. Karena panjang string baru bisa berbeda dari
-   yang lama, fungsi ini me-rebuild seluruh buffer (bukan
-   in-place seperti TAG_Byte/TAG_Int).
-   Format tag: [type=0x08][nameLen:int16 LE][name bytes]
-               [strLen:int16 LE][string bytes]
---------------------------------------------------------- */
-function setNamedStringTag(bytes, tagName, newValue) {
-  const nameBytes = new TextEncoder().encode(tagName);
-  const nameLen = nameBytes.length;
-
-  for (let i = 0; i < bytes.length - (3 + nameLen + 2); i++) {
-    if (bytes[i] !== 0x08) continue; // TAG_String
-
-    const len = bytes[i + 1] | (bytes[i + 2] << 8);
-    if (len !== nameLen) continue;
-
-    let match = true;
-    for (let j = 0; j < nameLen; j++) {
-      if (bytes[i + 3 + j] !== nameBytes[j]) { match = false; break; }
-    }
-    if (!match) continue;
-
-    const payloadIndex = i + 3 + nameLen;
-    const oldStrLen = bytes[payloadIndex] | (bytes[payloadIndex + 1] << 8);
-    const oldValue = new TextDecoder().decode(bytes.slice(payloadIndex + 2, payloadIndex + 2 + oldStrLen));
-    const payloadEnd = payloadIndex + 2 + oldStrLen;
-
-    const newNameValueBytes = new TextEncoder().encode(newValue);
-    const newStrLen = newNameValueBytes.length;
-
-    const newBytes = new Uint8Array(bytes.length - (payloadEnd - payloadIndex) + (2 + newStrLen));
-    newBytes.set(bytes.subarray(0, payloadIndex), 0);
-    newBytes[payloadIndex] = newStrLen & 0xff;
-    newBytes[payloadIndex + 1] = (newStrLen >> 8) & 0xff;
-    newBytes.set(newNameValueBytes, payloadIndex + 2);
-    newBytes.set(bytes.subarray(payloadEnd), payloadIndex + 2 + newStrLen);
-
-    return { found: true, before: oldValue, bytes: newBytes };
-  }
-
-  return { found: false, before: null, bytes };
-}
-
-/* ---------------------------------------------------------
    Mencari tag NBT bertipe TAG_Byte dengan nama tertentu,
    lalu mengubah nilai payload-nya (in-place pada buffer).
    Format tag: [type=0x01][nameLen:int16 LE][name bytes][value:1 byte]
@@ -569,134 +223,364 @@ function suggestOutputName(originalName) {
   return `${base}_fixed.mcworld`;
 }
 
-/* ---------- Render hasil ke chat ---------- */
-
-function renderResult(report, blob, outName) {
-  const flagResults = report.filter(r => r.type === 'flag');
-  const packResults = report.filter(r => r.type === 'pack');
-  const expResults = report.filter(r => r.type === 'experiments');
-
-  const renameResult = report.find(r => r.type === 'rename');
-
-  let html = '<div class="bubble result-bubble">';
-  html += '<p><b>✅ World selesai diproses!</b></p>';
-
-  if (renameResult) {
-    html += '<p style="margin-top:8px; font-size:13px;"><b>Rename World:</b></p><ul style="margin:4px 0 0 18px;">';
-    if (renameResult.found) {
-      html += `<li><code>LevelName</code>: "${escapeHtml(renameResult.before)}" ➜ "${escapeHtml(renameResult.after)}"</li>`;
-    } else {
-      html += `<li><code>LevelName</code>: tag tidak ditemukan, rename dilewati</li>`;
-    }
-    html += '</ul>';
-  }
-
-  html += '<p style="margin-top:8px; font-size:13px;"><b>Experimental Gameplay:</b></p><ul style="margin:4px 0 0 18px;">';
-  expResults.forEach(r => {
-    if (!r.found) {
-      html += `<li>Compound <code>experiments</code> tidak ditemukan (world tidak pakai experiment)</li>`;
-    } else if (r.disabled.length === 0) {
-      html += `<li>Ditemukan, tapi semua toggle sudah 0 (tidak ada yang aktif)</li>`;
-    } else {
-      r.disabled.forEach(d => {
-        html += `<li><code>${escapeHtml(d.name)}</code>: dimatikan (${d.before} ➜ 0)</li>`;
-      });
-    }
-  });
-  html += '</ul>';
-
-  html += '<p style="margin-top:8px; font-size:13px;"><b>Flag di level.dat:</b></p><ul style="margin:4px 0 0 18px;">';
-  flagResults.forEach(r => {
-    if (r.found) {
-      const beforeLabel = r.name.startsWith('GameType') ? gameTypeLabel(r.before) : r.before;
-      const afterLabel = r.name.startsWith('GameType') ? gameTypeLabel(r.after) : r.after;
-      html += `<li><code>${escapeHtml(r.name)}</code>: ${beforeLabel} ➜ ${afterLabel}</li>`;
-    } else {
-      html += `<li><code>${escapeHtml(r.name)}</code>: tidak ditemukan (dilewati)</li>`;
-    }
-  });
-  html += '</ul>';
-
-  html += '<p style="margin-top:10px; font-size:13px;"><b>Behavior/Resource Pack:</b></p><ul style="margin:4px 0 0 18px;">';
-  packResults.forEach(r => {
-    if (!r.found) {
-      html += `<li><code>${escapeHtml(r.name)}</code>: file tidak ada (world tidak pakai add-on)</li>`;
-    } else if (r.removedCount > 0) {
-      html += `<li><code>${escapeHtml(r.name)}</code>: ${r.removedCount} pack dilepas dari world</li>`;
-    } else if (r.removedCount === -1) {
-      html += `<li><code>${escapeHtml(r.name)}</code>: isi dikosongkan</li>`;
-    } else {
-      html += `<li><code>${escapeHtml(r.name)}</code>: sudah kosong, tidak ada pack aktif</li>`;
-    }
-  });
-  html += '</ul>';
-
-  const expDisabledCount = expResults.reduce((sum, r) => sum + (r.disabled ? r.disabled.length : 0), 0);
-  if (expDisabledCount > 0) {
-    html += '<p style="margin-top:8px; font-size:12.5px; color:var(--wa-teal-green);">✅ Toggle experimental di atas berhasil dimatikan di file. Berdasarkan pengujian, mematikan toggle ini <b>terbukti bisa mengaktifkan kembali achievement</b> untuk world yang sebelumnya terkunci karena Experimental Gameplay — walau dialog resmi Mojang menyebutnya permanen. Hasil bisa bervariasi tergantung versi game/perangkat, jadi tetap cek notifikasi achievement setelah masuk ke world.</p>';
-  }
-
-  const packRemoved = packResults.some(r => r.found && r.removedCount !== 0);
-  if (packRemoved) {
-    html += '<p style="margin-top:8px; font-size:12.5px; color:var(--wa-danger-text);">⚠️ Add-on/behavior pack dilepas dari world ini. Jika world bergantung pada blok/item custom dari pack tersebut, sebagian konten bisa hilang atau berubah jadi "unknown". Pastikan sudah backup!</p>';
-  }
-
-  html += '<p style="margin-top:8px;"><b>Cara pakai hasilnya:</b><br>';
-  html += 'Cara termudah — tap file hasil download, Minecraft akan otomatis meng-import world ini sebagai world baru.<br><br>';
-  html += 'Atau cara manual — ganti world lama kamu di folder:<br>';
-  html += '<code>minecraftWorlds/&lt;nama-folder-world&gt;</code><br>';
-  html += 'dengan isi hasil extract file ini.</p>';
-  html += `<a class="download-btn" id="downloadLink" href="#">⬇️ Download ${escapeHtml(outName)}</a>`;
-  html += '<span class="time">' + nowTime() + '</span></div>';
-
-  const node = htmlToNode(html);
-  resultArea.appendChild(node);
-
-  const url = URL.createObjectURL(blob);
-  const link = node.querySelector('#downloadLink');
-  link.href = url;
-  link.download = outName;
-
-  node.scrollIntoView({ behavior: 'smooth', block: 'end' });
-}
-
-function renderNotFound(report) {
-  let html = '<div class="bubble result-bubble error">';
-  html += '<p>❌ Tidak ada flag achievement maupun behavior/resource pack yang perlu diperbaiki di world ini.</p>';
-  html += '<p style="margin-top:6px;">Kemungkinan world memang belum pernah menonaktifkan achievement (harusnya sudah aktif), atau struktur world tidak standar.</p>';
-  html += '<span class="time">' + nowTime() + '</span></div>';
-  const node = htmlToNode(html);
-  resultArea.appendChild(node);
-  node.scrollIntoView({ behavior: 'smooth', block: 'end' });
-}
-
-function renderError(message) {
-  const html = `<div class="bubble result-bubble error"><p>❌ ${escapeHtml(message)}</p><span class="time">${nowTime()}</span></div>`;
-  const node = htmlToNode(html);
-  resultArea.appendChild(node);
-  node.scrollIntoView({ behavior: 'smooth', block: 'end' });
-}
-
-/* ---------- Util ---------- */
-
 function gameTypeLabel(val) {
   const map = { 0: 'Survival', 1: 'Creative', 2: 'Adventure', 3: 'Spectator' };
   return map[val] !== undefined ? `${map[val]} (${val})` : val;
 }
 
-function htmlToNode(html) {
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = html.trim();
-  return wrapper.firstChild;
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
 function nowTime() {
   const d = new Date();
-  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
 }
+
+let resultIdCounter = 0;
+
+/* ---------------------------------------------------------
+   Vue app
+--------------------------------------------------------- */
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      loggedIn: false,
+      guestName: '',
+
+      musicIcon: '🔇',
+      musicDisabled: false,
+      userPaused: false,
+
+      isDragover: false,
+      selectedFile: null,
+      processing: false,
+
+      toggles: {
+        hasBeenLoadedInCreative: true,
+        cheatsEnabled: true,
+        commandsEnabled: true,
+        gameType: true,
+        experiments: true,
+        education: true,
+        hardcore: true,
+        packs: true
+      },
+
+      results: []
+    };
+  },
+
+  computed: {
+    statusText() {
+      if (!this.loggedIn) return 'online';
+      return this.guestName ? `online • Tamu: ${this.guestName}` : 'online • Tamu';
+    }
+  },
+
+  methods: {
+    /* ---------- Login tamu ---------- */
+    doGuestLogin() {
+      this.loggedIn = true;
+      this.$nextTick(() => this.setupBgm());
+    },
+
+    logout() {
+      this.loggedIn = false;
+      this.guestName = '';
+      this.selectedFile = null;
+      this.results = [];
+    },
+
+    /* ---------- BGM: true autoplay via trik muted -> unmute ---------- */
+    setupBgm() {
+      const bgmAudio = this.$refs.bgmAudio;
+      if (!bgmAudio) return;
+
+      bgmAudio.muted = true;
+      bgmAudio.play()
+        .then(() => this.updateMusicBtnIcon())
+        .catch(() => this.updateMusicBtnIcon());
+
+      const unmuteOnFirstInteraction = () => {
+        if (this.userPaused) return;
+        bgmAudio.muted = false;
+        if (bgmAudio.paused) {
+          bgmAudio.play().catch(() => {});
+        }
+        this.updateMusicBtnIcon();
+      };
+
+      document.addEventListener('click', unmuteOnFirstInteraction, { once: true });
+      document.addEventListener('touchstart', unmuteOnFirstInteraction, { once: true });
+    },
+
+    updateMusicBtnIcon() {
+      const bgmAudio = this.$refs.bgmAudio;
+      if (!bgmAudio) return;
+      if (bgmAudio.paused) {
+        this.musicIcon = '🔇';
+      } else {
+        this.musicIcon = bgmAudio.muted ? '🔈' : '🔊';
+      }
+    },
+
+    toggleMusic() {
+      const bgmAudio = this.$refs.bgmAudio;
+      if (!bgmAudio) return;
+
+      if (bgmAudio.paused) {
+        this.userPaused = false;
+        bgmAudio.muted = false;
+        bgmAudio.play().catch(() => {});
+      } else if (bgmAudio.muted) {
+        bgmAudio.muted = false;
+      } else {
+        this.userPaused = true;
+        bgmAudio.pause();
+      }
+      this.updateMusicBtnIcon();
+    },
+
+    onAudioError() {
+      this.musicIcon = '🚫';
+      this.musicDisabled = true;
+    },
+
+    /* ---------- UI: pilih file ---------- */
+    triggerFileInput() {
+      this.$refs.fileInput.click();
+    },
+
+    onFileChange(e) {
+      if (e.target.files.length > 0) {
+        this.selectedFile = e.target.files[0];
+      }
+    },
+
+    onDrop(e) {
+      this.isDragover = false;
+      if (e.dataTransfer.files.length > 0) {
+        this.selectedFile = e.dataTransfer.files[0];
+      }
+    },
+
+    /* ---------- Proses utama ---------- */
+    async processWorld() {
+      if (!this.selectedFile || this.processing) return;
+
+      this.processing = true;
+
+      try {
+        const toggles = this.toggles;
+        const arrayBuffer = await this.selectedFile.arrayBuffer();
+
+        // Buka .mcworld sebagai arsip zip
+        const zip = await JSZip.loadAsync(arrayBuffer);
+
+        // Cari entry level.dat (biasanya di root, tapi cari juga kalau nested)
+        const levelDatEntry = findLevelDatEntry(zip);
+
+        if (!levelDatEntry) {
+          this.pushError('File level.dat tidak ditemukan di dalam world ini. Pastikan file yang diupload adalah .mcworld / hasil zip folder world yang valid (bukan zip kosong atau salah folder).');
+          return;
+        }
+
+        const levelDatBytes = await levelDatEntry.async('uint8array');
+
+        const report = [];
+
+        // === BAGIAN 1: Flag byte di level.dat ===
+        // - hasBeenLoadedInCreative -> world pernah dibuka di Creative mode
+        // - cheatsEnabled / commandsEnabled -> "Allow Cheats" pernah ON
+        // - experiments_ever_used / saved_with_toggled_experiments -> pernah
+        //   mengaktifkan salah satu Experimental Gameplay toggle (flag ini
+        //   muncul otomatis begitu experiment pernah dinyalakan sekali saja).
+        //   Kedua flag ini digabung dengan toggle "experiments" di UI karena
+        //   sama-sama soal riwayat Experimental Gameplay.
+        const tagsToFix = [
+          'hasBeenLoadedInCreative',
+          'cheatsEnabled',
+          'commandsEnabled'
+        ].filter(tagName => toggles[tagName]);
+
+        if (toggles.experiments) {
+          tagsToFix.push('experiments_ever_used', 'saved_with_toggled_experiments');
+        }
+
+        if (toggles.education) {
+          tagsToFix.push('educationFeaturesEnabled');
+        }
+
+        tagsToFix.forEach(tagName => {
+          const result = setNamedByteTag(levelDatBytes, tagName, 0);
+          report.push({
+            type: 'flag',
+            name: tagName,
+            found: result.found,
+            before: result.before,
+            after: result.found ? 0 : null
+          });
+        });
+
+        // IsHardcore -> world pernah/masih diset sebagai Hardcore. Mode ini
+        // mengunci difficulty ke Hard permanen & mematikan respawn (mati =
+        // game over), yang menurut laporan beberapa pemain turut membuat
+        // achievement tidak bisa didapat. Dipaksa ke 0 (non-hardcore).
+        if (toggles.hardcore) {
+          const hardcoreResult = setNamedByteTag(levelDatBytes, 'IsHardcore', 0);
+          report.push({
+            type: 'flag',
+            name: 'IsHardcore (mode Hardcore dinonaktifkan)',
+            found: hardcoreResult.found,
+            before: hardcoreResult.before,
+            after: hardcoreResult.found ? 0 : null
+          });
+        }
+
+        // GameType (TAG_Int) -> 0 (Survival). Kalau world saat ini masih
+        // default Creative, achievement tidak akan bisa didapat walau
+        // semua flag riwayat di atas sudah 0.
+        if (toggles.gameType) {
+          const gameTypeResult = setNamedIntTag(levelDatBytes, 'GameType', 0);
+          report.push({
+            type: 'flag',
+            name: 'GameType (mode dipaksa ke Survival)',
+            found: gameTypeResult.found,
+            before: gameTypeResult.found ? gameTypeResult.before : null,
+            after: gameTypeResult.found ? 0 : null
+          });
+        }
+
+        // Matikan SEMUA toggle experimental yang sedang aktif di compound
+        // "experiments" — apa pun namanya (termasuk yang belum diketahui).
+        if (toggles.experiments) {
+          const expResult = disableAllExperiments(levelDatBytes);
+          report.push({
+            type: 'experiments',
+            found: expResult.found,
+            disabled: expResult.disabled
+          });
+        }
+
+        // === BAGIAN 2: Lepas behavior pack & resource pack dari world ===
+        // Add-on/behavior pack yang masih aktif di sebuah world membuat
+        // achievement tetap terkunci walau semua flag di atas sudah 0.
+        if (toggles.packs) {
+          const packFiles = ['world_behavior_packs.json', 'world_resource_packs.json'];
+
+          for (const fileName of packFiles) {
+            const entry = findEntryByName(zip, fileName);
+            if (!entry) {
+              report.push({ type: 'pack', name: fileName, found: false });
+              continue;
+            }
+
+            const text = await entry.async('string');
+            let packCount = 0;
+            try {
+              const parsed = JSON.parse(text);
+              packCount = Array.isArray(parsed) ? parsed.length : 0;
+            } catch (e) {
+              packCount = text.trim().length > 2 ? -1 : 0; // -1 = tidak bisa diparse tapi ada isi
+            }
+
+            if (packCount > 0 || packCount === -1) {
+              zip.file(entry.name, '[]');
+              report.push({ type: 'pack', name: fileName, found: true, removedCount: packCount });
+            } else {
+              report.push({ type: 'pack', name: fileName, found: true, removedCount: 0 });
+            }
+          }
+        }
+
+        const anyFlagFound = report.some(r => r.type === 'flag' && r.found);
+        const anyPackRemoved = report.some(r => r.type === 'pack' && r.found && r.removedCount !== 0);
+        const anyExpDisabled = report.some(r => r.type === 'experiments' && r.disabled && r.disabled.length > 0);
+        const anyFound = anyFlagFound || anyPackRemoved || anyExpDisabled;
+
+        if (!anyFound) {
+          this.pushNotFound();
+          return;
+        }
+
+        // Tulis kembali level.dat yang sudah dimodifikasi ke dalam zip
+        zip.file(levelDatEntry.name, levelDatBytes);
+
+        // Generate ulang file .mcworld
+        const outBlob = await zip.generateAsync({
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 }
+        });
+
+        const outName = suggestOutputName(this.selectedFile.name);
+        this.pushSuccess(report, outBlob, outName);
+
+      } catch (err) {
+        console.error(err);
+        this.pushError('Terjadi kesalahan saat membaca file. Pastikan file yang diupload adalah .mcworld / .zip world yang valid dan tidak corrupt.');
+      } finally {
+        this.processing = false;
+      }
+    },
+
+    /* ---------- Bangun entri hasil untuk state Vue ---------- */
+    pushSuccess(report, blob, outName) {
+      const flagResults = report.filter(r => r.type === 'flag').map(r => ({
+        name: r.name,
+        found: r.found,
+        beforeLabel: r.name.startsWith('GameType') ? gameTypeLabel(r.before) : r.before,
+        afterLabel: r.name.startsWith('GameType') ? gameTypeLabel(r.after) : r.after
+      }));
+      const packResults = report.filter(r => r.type === 'pack');
+      const expResults = report.filter(r => r.type === 'experiments');
+
+      const expDisabledCount = expResults.reduce((sum, r) => sum + (r.disabled ? r.disabled.length : 0), 0);
+      const packRemoved = packResults.some(r => r.found && r.removedCount !== 0);
+
+      const downloadUrl = URL.createObjectURL(blob);
+
+      this.results.push({
+        id: ++resultIdCounter,
+        kind: 'success',
+        flagResults,
+        packResults,
+        expResults,
+        expDisabledCount,
+        packRemoved,
+        downloadUrl,
+        downloadName: outName,
+        time: nowTime()
+      });
+
+      this.scrollResultsIntoView();
+    },
+
+    pushNotFound() {
+      this.results.push({
+        id: ++resultIdCounter,
+        kind: 'notfound',
+        time: nowTime()
+      });
+      this.scrollResultsIntoView();
+    },
+
+    pushError(message) {
+      this.results.push({
+        id: ++resultIdCounter,
+        kind: 'error',
+        message,
+        time: nowTime()
+      });
+      this.scrollResultsIntoView();
+    },
+
+    scrollResultsIntoView() {
+      this.$nextTick(() => {
+        const chatArea = this.$refs.chatArea;
+        if (chatArea) {
+          chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
+        }
+      });
+    }
+  }
+}).mount('#app');
