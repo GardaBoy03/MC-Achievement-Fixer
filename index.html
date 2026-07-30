@@ -34,6 +34,10 @@
       </div>
       <div class="changelog-body">
         <div class="changelog-entry">
+          <div class="changelog-version">v2.1 <span class="changelog-date">30 Jul 2026</span></div>
+          <p>Tambah toggle untuk menonaktifkan <code>educationFeaturesEnabled</code> (Education Edition). Flag ini juga bisa membuat achievement terkunci kalau world pernah dibuka dengan fitur Education aktif.</p>
+        </div>
+        <div class="changelog-entry">
           <div class="changelog-version">v2.0 <span class="changelog-date">30 Jul 2026</span></div>
           <p>Tambah fitur <b>rename world</b> sebelum diproses. Nama baru akan diterapkan ke tag <code>LevelName</code> di level.dat dan file <code>levelname.txt</code> (kalau ada), jadi world langsung tampil dengan nama baru di daftar world Minecraft.</p>
         </div>
@@ -168,6 +172,11 @@
         <label class="toggle-row">
           <span class="toggle-label"><code>experiments_ever_used</code>, <code>saved_with_toggled_experiments</code>, & semua toggle di dalam <code>experiments</code> dimatikan (apa pun namanya, otomatis terdeteksi)</span>
           <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="experiments" checked><span class="slider"></span></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label"><code>educationFeaturesEnabled</code> → nonaktifkan Education Edition</span>
+          <span class="switch"><input type="checkbox" class="fix-toggle" data-fix="education" checked><span class="slider"></span></span>
         </label>
 
         <label class="toggle-row">

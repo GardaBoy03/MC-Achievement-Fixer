@@ -212,6 +212,10 @@ processBtn.addEventListener('click', async () => {
       tagsToFix.push('experiments_ever_used', 'saved_with_toggled_experiments');
     }
 
+    if (toggles.education) {
+      tagsToFix.push('educationFeaturesEnabled');
+    }
+
     tagsToFix.forEach(tagName => {
       const result = setNamedByteTag(levelDatBytes, tagName, 0);
       report.push({
