@@ -296,6 +296,7 @@ createApp({
       if (!bgmAudio) return;
 
       bgmAudio.muted = true;
+      bgmAudio.volume = 0.5; // volume dikecilkan 50% agar tidak terlalu kencang
       bgmAudio.play()
         .then(() => this.updateMusicBtnIcon())
         .catch(() => this.updateMusicBtnIcon());

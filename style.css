@@ -19,9 +19,10 @@
 
 body{
   font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
-  background: #0b141a;
+  background: #111b21;
   display: flex;
   justify-content: center;
+  align-items: center;
   min-height: 100vh;
 }
 
@@ -34,6 +35,61 @@ body{
   flex-direction: column;
   box-shadow: 0 0 40px rgba(0,0,0,0.4);
   position: relative;
+}
+
+/* ============ WhatsApp Web style (desktop / layar lebar) ============ */
+@media (min-width: 769px){
+  body{
+    background: #111b21;
+    padding: 32px 0;
+  }
+
+  .app{
+    max-width: 900px;
+    width: 92%;
+    min-height: 90vh;
+    height: 90vh;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.55);
+  }
+
+  .app-header{
+    padding: 12px 24px;
+  }
+
+  .chat-area{
+    padding: 24px 60px 110px 60px;
+    background-color: #efeae2;
+    background-image:
+      linear-gradient(rgba(239,234,226,0.94), rgba(239,234,226,0.94)),
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 12px);
+  }
+
+  .bubble{
+    max-width: 65%;
+    font-size: 14px;
+  }
+
+  .result-bubble{
+    max-width: 65%;
+  }
+
+  .upload-card{
+    max-width: 78%;
+  }
+
+  .app-footer{
+    padding: 12px 24px;
+  }
+
+  .fake-input{
+    max-width: 100%;
+  }
+
+  .login-overlay{
+    border-radius: 8px;
+  }
 }
 
 /* Header */
@@ -469,9 +525,23 @@ a.changelog-btn{
   letter-spacing: 0.2px;
 }
 
-@media (max-width: 500px){
+@media (max-width: 768px){
+  body{
+    padding: 0;
+    align-items: stretch;
+  }
+
   .app{
     max-width: 100%;
+    min-height: 100vh;
+    height: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .app-header{
+    padding: env(safe-area-inset-top, 10px) 12px 10px 12px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
   }
 
   .chat-area{
@@ -490,5 +560,22 @@ a.changelog-btn{
 
   .header-info h1{
     font-size: 16px;
+  }
+
+  .app-footer{
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  }
+
+  .login-overlay{
+    padding: 0;
+  }
+
+  .login-panel{
+    border-radius: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 100%;
   }
 }
