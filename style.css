@@ -1,14 +1,40 @@
 :root{
-  --wa-dark-green: #075E54;
-  --wa-teal-green: #128C7E;
-  --wa-light-green: #25D366;
-  --wa-bubble-out: #DCF8C6;
-  --wa-bubble-in: #FFFFFF;
-  --wa-bg: #ECE5DD;
-  --wa-text-dark: #111B21;
-  --wa-text-muted: #667781;
-  --wa-danger: #FDECEA;
-  --wa-danger-text: #B3261E;
+  /* === Ore UI palette — deepslate stone, oak plank, grass & redstone === */
+  --mc-bg: #17181a;
+  --mc-bg-accent: #202225;
+  --mc-panel: #37393c;
+  --mc-panel-alt: #444649;
+  --mc-slot: #8b8b8b;
+  --mc-slot-dark: #5b5b5b;
+  --mc-border-hi: rgba(255,255,255,0.55);
+  --mc-border-lo: rgba(0,0,0,0.55);
+
+  --mc-wood: #caa06b;
+  --mc-wood-dark: #7c5a37;
+  --mc-wood-text: #3a2a17;
+
+  --mc-green: #4caf32;
+  --mc-green-dark: #2c6e1c;
+  --mc-green-hi: #74d956;
+  --mc-emerald: #1f8f5f;
+  --mc-emerald-dark: #12583b;
+
+  --mc-red: #c4342b;
+  --mc-red-dark: #7a1e18;
+  --mc-red-bg: #3a1613;
+
+  --mc-gold: #f4c542;
+
+  --wa-teal-green: var(--mc-green);
+  --wa-dark-green: #232427;
+  --wa-light-green: var(--mc-green-hi);
+  --wa-bubble-out: var(--mc-emerald);
+  --wa-bubble-in: var(--mc-wood);
+  --wa-bg: var(--mc-bg);
+  --wa-text-dark: #f2efe4;
+  --wa-text-muted: #cfc9b8;
+  --wa-danger: var(--mc-red-bg);
+  --wa-danger-text: #ff9d92;
 }
 
 *{
@@ -18,29 +44,46 @@
 }
 
 body{
-  font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
-  background: #111b21;
+  font-family: 'Nunito', 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  background: var(--mc-bg);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 16px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,0.15) 0, rgba(0,0,0,0.15) 2px, transparent 2px, transparent 16px);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
 }
 
+/* Pixel bevel — the signature Minecraft button/panel edge:
+   light highlight top-left, dark shade bottom-right */
+.pixel-bevel-out{
+  box-shadow:
+    inset 2px 2px 0 var(--mc-border-hi),
+    inset -3px -3px 0 var(--mc-border-lo);
+}
+.pixel-bevel-in{
+  box-shadow:
+    inset -2px -2px 0 var(--mc-border-hi),
+    inset 3px 3px 0 var(--mc-border-lo);
+}
+
 .app{
   width: 100%;
   max-width: 480px;
   min-height: 100vh;
-  background: var(--wa-bg);
+  background: var(--mc-bg-accent);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 40px rgba(0,0,0,0.4);
+  box-shadow: 0 0 0 4px #000, 0 0 40px rgba(0,0,0,0.6);
   position: relative;
 }
 
-/* ============ WhatsApp Web style (desktop / layar lebar) ============ */
+/* ============ Layar lebar / desktop ============ */
 @media (min-width: 769px){
   body{
-    background: #111b21;
+    background: var(--mc-bg);
     padding: 32px 0;
   }
 
@@ -49,9 +92,9 @@ body{
     width: 92%;
     min-height: 90vh;
     height: 90vh;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 12px 48px rgba(0,0,0,0.55);
+    box-shadow: 0 0 0 4px #000, 0 12px 48px rgba(0,0,0,0.7);
   }
 
   .app-header{
@@ -60,10 +103,11 @@ body{
 
   .chat-area{
     padding: 24px 60px 110px 60px;
-    background-color: #efeae2;
+    background-color: #2a2b2d;
     background-image:
-      linear-gradient(rgba(239,234,226,0.94), rgba(239,234,226,0.94)),
-      repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 12px);
+      linear-gradient(rgba(26,27,29,0.92), rgba(26,27,29,0.92)),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 14px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.12) 0, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 14px);
   }
 
   .bubble{
@@ -88,14 +132,15 @@ body{
   }
 
   .login-overlay{
-    border-radius: 8px;
+    border-radius: 10px;
   }
 }
 
-/* Header */
+/* Header — top bar of the "pause menu" */
 .app-header{
-  background: var(--wa-dark-green);
-  color: white;
+  background: linear-gradient(180deg, #2a2b2d 0%, #1c1d1f 100%);
+  border-bottom: 3px solid #000;
+  color: var(--wa-text-dark);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -108,38 +153,50 @@ body{
 .avatar{
   width: 42px;
   height: 42px;
-  border-radius: 50%;
-  background: var(--wa-teal-green);
+  border-radius: 6px;
+  background: linear-gradient(160deg, var(--mc-green-hi), var(--mc-green-dark));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
+  box-shadow:
+    inset 2px 2px 0 var(--mc-border-hi),
+    inset -3px -3px 0 var(--mc-border-lo);
 }
 
 .header-info h1{
-  font-size: 17px;
-  font-weight: 600;
+  font-family: 'Press Start 2P', 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.6);
+  line-height: 1.4;
 }
 
 .status-text{
   font-size: 12px;
-  opacity: 0.85;
+  color: var(--mc-green-hi);
+  font-weight: 800;
+  opacity: 0.9;
 }
 
 .changelog-btn{
-  background: rgba(255,255,255,0.15);
+  background: linear-gradient(160deg, #6b6d70, #3d3e40);
   border: none;
   color: white;
   width: 34px;
   height: 34px;
-  border-radius: 50%;
-  font-size: 16px;
+  border-radius: 6px;
+  font-size: 15px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease;
+  transition: transform 0.1s ease, filter 0.15s ease;
   flex-shrink: 0;
+  box-shadow:
+    inset 2px 2px 0 var(--mc-border-hi),
+    inset -3px -3px 0 var(--mc-border-lo);
 }
 
 #musicBtn{
@@ -147,19 +204,28 @@ body{
 }
 
 .changelog-btn:hover{
-  background: rgba(255,255,255,0.28);
+  filter: brightness(1.2);
+}
+
+.changelog-btn:active{
+  transform: translateY(1px);
+  box-shadow:
+    inset -2px -2px 0 var(--mc-border-hi),
+    inset 3px 3px 0 var(--mc-border-lo);
 }
 
 a.changelog-btn{
   text-decoration: none;
 }
 
-/* Layar login tamu */
+/* Layar login tamu — world-select style */
 .login-overlay{
   display: flex;
   position: fixed;
   inset: 0;
-  background: var(--wa-dark-green);
+  background:
+    linear-gradient(rgba(10,12,10,0.55), rgba(10,12,10,0.65)),
+    repeating-linear-gradient(45deg, #3a5a2c 0, #3a5a2c 40px, #345226 40px, #345226 80px);
   z-index: 100;
   justify-content: center;
   align-items: center;
@@ -169,11 +235,15 @@ a.changelog-btn{
 .login-panel{
   width: 100%;
   max-width: 380px;
-  background: var(--wa-bg);
-  border-radius: 14px;
+  background: linear-gradient(180deg, #46484b, #333537);
+  border-radius: 10px;
   padding: 32px 24px;
   text-align: center;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  box-shadow:
+    0 0 0 4px #000,
+    inset 3px 3px 0 var(--mc-border-hi),
+    inset -3px -3px 0 var(--mc-border-lo),
+    0 8px 24px rgba(0,0,0,0.5);
   animation: slideDown 0.2s ease;
 }
 
@@ -185,24 +255,31 @@ a.changelog-btn{
 .login-avatar{
   width: 64px;
   height: 64px;
-  border-radius: 50%;
-  background: var(--wa-teal-green);
+  border-radius: 8px;
+  background: linear-gradient(160deg, var(--mc-green-hi), var(--mc-green-dark));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 30px;
   margin: 0 auto 14px auto;
+  box-shadow:
+    inset 3px 3px 0 var(--mc-border-hi),
+    inset -4px -4px 0 var(--mc-border-lo);
 }
 
 .login-title{
-  font-size: 19px;
-  font-weight: 700;
+  font-family: 'Press Start 2P', 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
   color: var(--wa-text-dark);
-  margin-bottom: 8px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.6);
+  margin-bottom: 14px;
 }
 
 .login-sub{
   font-size: 13px;
+  font-weight: 600;
   color: var(--wa-text-muted);
   line-height: 1.5;
   margin-bottom: 18px;
@@ -210,20 +287,27 @@ a.changelog-btn{
 
 .login-input{
   width: 100%;
-  border: 1px solid #d8d8d8;
+  border: none;
   border-radius: 6px;
   padding: 10px 12px;
   font-size: 13.5px;
   font-family: inherit;
-  color: var(--wa-text-dark);
-  background: white;
+  font-weight: 700;
+  color: var(--mc-wood-text);
+  background: #d9d4c4;
   outline: none;
-  margin-bottom: 12px;
-  transition: border-color 0.2s ease;
+  margin-bottom: 14px;
+  box-shadow:
+    inset -2px -2px 0 rgba(255,255,255,0.6),
+    inset 2px 2px 0 rgba(0,0,0,0.45);
+  transition: box-shadow 0.2s ease;
 }
 
 .login-input:focus{
-  border-color: var(--wa-teal-green);
+  box-shadow:
+    inset -2px -2px 0 rgba(255,255,255,0.6),
+    inset 2px 2px 0 rgba(0,0,0,0.45),
+    0 0 0 2px var(--mc-green-hi);
 }
 
 .login-btn{
@@ -232,57 +316,70 @@ a.changelog-btn{
 
 .login-note{
   font-size: 11px;
+  font-weight: 700;
   color: var(--wa-text-muted);
 }
 
-/* Chat area */
+/* Chat area — deepslate wall */
 .chat-area{
   flex: 1;
   padding: 16px 12px 100px 12px;
+  background-color: #202123;
   background-image:
-    radial-gradient(circle at 20% 30%, rgba(0,0,0,0.02) 1px, transparent 1px);
-  background-size: 20px 20px;
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0, rgba(0,0,0,0.16) 1px, transparent 1px, transparent 12px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.10) 0, rgba(0,0,0,0.10) 1px, transparent 1px, transparent 12px);
   overflow-y: auto;
 }
 
 .date-chip{
+  font-family: 'Press Start 2P', 'Nunito', sans-serif;
   text-align: center;
-  background: #E1F3FB;
-  color: #54656F;
-  font-size: 12px;
-  padding: 6px 12px;
-  border-radius: 8px;
+  background: #1c1d1f;
+  color: var(--mc-gold);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 8px 12px;
+  border-radius: 6px;
   width: fit-content;
   margin: 0 auto 16px auto;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.12),
+    inset -2px -2px 0 rgba(0,0,0,0.5);
 }
 
 .bubble{
-  background: var(--wa-bubble-in);
-  border-radius: 8px;
-  padding: 10px 12px 18px 12px;
-  margin-bottom: 10px;
+  background: linear-gradient(180deg, var(--mc-wood), #b98a52);
+  border-radius: 6px;
+  padding: 11px 13px 20px 13px;
+  margin-bottom: 12px;
   max-width: 88%;
   position: relative;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.35),
+    inset -3px -3px 0 rgba(0,0,0,0.35),
+    0 2px 4px rgba(0,0,0,0.4);
   font-size: 14.5px;
-  line-height: 1.4;
-  color: var(--wa-text-dark);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--mc-wood-text);
   word-wrap: break-word;
   overflow-wrap: anywhere;
 }
 
+.bubble b{ color: #23180b; }
+
 .bubble-left{
   margin-right: auto;
-  border-top-left-radius: 0;
 }
 
 .bubble p code{
-  background: #f0f0f0;
+  background: rgba(0,0,0,0.18);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 12.5px;
-  color: #d63384;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 700;
+  color: #6e1b8f;
   display: inline-block;
   max-width: 100%;
   word-break: break-all;
@@ -297,33 +394,48 @@ a.changelog-btn{
   bottom: 6px;
   right: 10px;
   font-size: 11px;
-  color: var(--wa-text-muted);
+  font-weight: 700;
+  color: rgba(0,0,0,0.45);
 }
 
 .bubble.warn{
-  background: var(--wa-danger);
-  color: var(--wa-danger-text);
+  background: linear-gradient(180deg, #d9564b, var(--mc-red));
+  color: #fff3f1;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -3px -3px 0 rgba(0,0,0,0.4),
+    0 2px 4px rgba(0,0,0,0.4);
 }
+
+.bubble.warn b{ color: #ffffff; }
 
 /* Upload card */
 .upload-card{
   max-width: 100%;
+  background: linear-gradient(180deg, #4d4f52, #37393c);
+  color: var(--wa-text-dark);
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.18),
+    inset -3px -3px 0 rgba(0,0,0,0.5),
+    0 2px 4px rgba(0,0,0,0.4);
 }
 
+.upload-card b{ color: #fff; }
+
 .dropzone{
-  border: 2px dashed var(--wa-teal-green);
-  border-radius: 10px;
-  padding: 24px 12px;
+  border: 3px dashed var(--mc-green-hi);
+  border-radius: 8px;
+  padding: 26px 12px;
   text-align: center;
   margin: 10px 0;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
-  background: #FAFFFC;
+  background: rgba(76,175,50,0.08);
 }
 
 .dropzone.dragover{
-  background: #E7FCEF;
-  border-color: var(--wa-light-green);
+  background: rgba(76,175,50,0.22);
+  border-color: var(--mc-gold);
 }
 
 .drop-icon{
@@ -333,12 +445,13 @@ a.changelog-btn{
 
 .dropzone p{
   font-size: 13.5px;
+  font-weight: 700;
   color: var(--wa-text-muted);
 }
 
 .file-selected{
-  color: var(--wa-teal-green);
-  font-weight: 600;
+  color: var(--mc-green-hi);
+  font-weight: 800;
 }
 
 .checkbox-row{
@@ -353,14 +466,15 @@ a.changelog-btn{
 
 .checkbox-row input{
   margin-top: 3px;
-  accent-color: var(--wa-teal-green);
+  accent-color: var(--mc-green);
 }
 
 .info-fix-list{
-  background: #F7F7F7;
-  border-radius: 8px;
+  background: #232426;
+  border-radius: 6px;
   padding: 10px 12px;
   margin: 10px 0 14px 0;
+  box-shadow: inset 0 0 0 2px #000;
 }
 
 .info-fix-list ul{
@@ -368,20 +482,21 @@ a.changelog-btn{
 }
 
 .info-fix-list code{
-  background: #eee;
+  background: rgba(255,255,255,0.08);
   padding: 1px 5px;
   border-radius: 4px;
-  color: #d63384;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: var(--mc-gold);
 }
 
-/* Toggle switch rows */
+/* Toggle switch rows — reskinned as lever-style ON/OFF blocks */
 .toggle-row{
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid #e9e9e9;
+  padding: 9px 4px;
+  border-bottom: 1px dashed #555;
   cursor: pointer;
 }
 
@@ -391,22 +506,24 @@ a.changelog-btn{
 
 .toggle-label{
   font-size: 12.5px;
+  font-weight: 600;
   color: var(--wa-text-muted);
   line-height: 1.4;
 }
 
 .toggle-row .toggle-label code{
-  background: #eee;
+  background: rgba(255,255,255,0.08);
   padding: 1px 5px;
   border-radius: 4px;
-  color: #d63384;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: var(--mc-gold);
 }
 
 .switch{
   position: relative;
   display: inline-block;
-  width: 40px;
-  height: 22px;
+  width: 44px;
+  height: 24px;
   flex-shrink: 0;
 }
 
@@ -420,9 +537,12 @@ a.changelog-btn{
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: #ccc;
+  background: linear-gradient(180deg, #8a8a8a, #5c5c5c);
   transition: background-color 0.2s ease;
-  border-radius: 22px;
+  border-radius: 5px;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.35),
+    inset -2px -2px 0 rgba(0,0,0,0.45);
 }
 
 .switch .slider::before{
@@ -432,18 +552,18 @@ a.changelog-btn{
   width: 16px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
+  background: linear-gradient(180deg, #f1efe4, #cfc9b8);
   transition: transform 0.2s ease;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 
 .switch input:checked + .slider{
-  background-color: var(--wa-light-green);
+  background: linear-gradient(180deg, var(--mc-green-hi), var(--mc-green-dark));
 }
 
 .switch input:checked + .slider::before{
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
 
 .switch input:disabled + .slider{
@@ -453,74 +573,115 @@ a.changelog-btn{
 
 .btn-main{
   width: 100%;
-  background: var(--wa-teal-green);
-  color: white;
+  font-family: 'Press Start 2P', 'Nunito', sans-serif;
+  background: linear-gradient(180deg, var(--mc-green-hi), var(--mc-green-dark));
+  color: #ffffff;
   border: none;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 14.5px;
-  font-weight: 600;
+  padding: 14px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  letter-spacing: 0.5px;
+  font-weight: 400;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
   cursor: pointer;
-  transition: background 0.2s ease, opacity 0.2s ease;
+  transition: filter 0.15s ease, transform 0.1s ease;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.4),
+    inset -3px -3px 0 rgba(0,0,0,0.4),
+    0 2px 3px rgba(0,0,0,0.4);
 }
 
 .btn-main:disabled{
-  background: #9fbfba;
+  background: linear-gradient(180deg, #8f9490, #6a6f6c);
   cursor: not-allowed;
+  text-shadow: none;
 }
 
 .btn-main:not(:disabled):hover{
-  background: var(--wa-dark-green);
+  filter: brightness(1.12);
+}
+
+.btn-main:not(:disabled):active{
+  transform: translateY(1px);
+  box-shadow:
+    inset -2px -2px 0 rgba(255,255,255,0.3),
+    inset 3px 3px 0 rgba(0,0,0,0.4);
 }
 
 /* Result bubbles */
 .result-bubble{
-  background: var(--wa-bubble-out);
+  background: linear-gradient(180deg, #2fae76, var(--mc-emerald-dark));
   margin-left: auto;
-  border-top-right-radius: 0;
-  border-top-left-radius: 8px;
+  border-radius: 6px;
   max-width: 88%;
+  color: #eafff2;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.25),
+    inset -3px -3px 0 rgba(0,0,0,0.4),
+    0 2px 4px rgba(0,0,0,0.4);
+}
+
+.result-bubble b{ color: #ffffff; }
+
+.result-bubble .time{
+  color: rgba(255,255,255,0.65);
+}
+
+.result-bubble code{
+  background: rgba(0,0,0,0.28);
+  color: var(--mc-gold);
 }
 
 .result-bubble.error{
-  background: var(--wa-danger);
-  color: var(--wa-danger-text);
+  background: linear-gradient(180deg, #d9564b, var(--mc-red-dark));
+  color: #ffece9;
 }
 
 .download-btn{
   display: inline-block;
-  margin-top: 10px;
-  background: var(--wa-light-green);
-  color: white;
+  font-family: 'Press Start 2P', 'Nunito', sans-serif;
+  margin-top: 12px;
+  background: linear-gradient(180deg, var(--mc-gold), #c99a1e);
+  color: #3a2a04;
   text-decoration: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 13.5px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.5),
+    inset -3px -3px 0 rgba(0,0,0,0.35),
+    0 2px 3px rgba(0,0,0,0.4);
 }
 
 /* Footer */
 .app-footer{
   position: sticky;
   bottom: 0;
-  background: #F0F0F0;
+  background: linear-gradient(180deg, #26272a, #1a1b1d);
   padding: 10px 14px;
-  border-top: 1px solid #ddd;
+  border-top: 3px solid #000;
 }
 
 .fake-input{
-  background: white;
-  border-radius: 20px;
-  padding: 10px 16px;
-  font-size: 12.5px;
+  background: #37393c;
   color: var(--wa-text-muted);
+  border-radius: 6px;
+  padding: 11px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
   text-align: center;
+  box-shadow:
+    inset 2px 2px 0 rgba(0,0,0,0.4),
+    inset -2px -2px 0 rgba(255,255,255,0.08);
 }
 
 .credit-footer{
   text-align: center;
   font-size: 11px;
-  color: #8a9299;
+  font-weight: 700;
+  color: #7d8079;
   margin-top: 8px;
   letter-spacing: 0.2px;
 }
@@ -551,7 +712,7 @@ a.changelog-btn{
   .bubble{
     max-width: 94%;
     font-size: 14px;
-    padding: 9px 10px 16px 10px;
+    padding: 10px 11px 18px 11px;
   }
 
   .bubble p code{
@@ -559,7 +720,7 @@ a.changelog-btn{
   }
 
   .header-info h1{
-    font-size: 16px;
+    font-size: 11px;
   }
 
   .app-footer{
@@ -577,5 +738,6 @@ a.changelog-btn{
     flex-direction: column;
     justify-content: center;
     max-width: 100%;
+    box-shadow: none;
   }
 }
