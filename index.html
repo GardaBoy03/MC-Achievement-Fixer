@@ -11,36 +11,33 @@
 
 <div id="app">
 
-  <!-- Layar login tamu -->
-  <div class="login-overlay" id="loginOverlay" v-if="!loggedIn">
-    <div class="login-panel">
-      <div class="login-avatar">🏆</div>
-      <h1 class="login-title">MC Achievement Fixer</h1>
-      <p class="login-sub">Masuk untuk mulai memperbaiki world Minecraft kamu. Tanpa perlu akun — cukup masuk sebagai tamu.</p>
-      <input type="text" v-model="guestName" @keydown.enter="doGuestLogin" class="login-input" placeholder="Nama kamu (opsional)" maxlength="30">
-      <button @click="doGuestLogin" class="btn-main login-btn">👤 Masuk sebagai Tamu</button>
-      <p class="login-note">🔒 Client-side only • Tidak ada data dikirim ke server</p>
-    </div>
-  </div>
-
-  <div class="app" v-else>
+  <div class="app">
 
     <!-- Header ala WhatsApp -->
     <header class="app-header">
       <div class="avatar">🏆</div>
       <div class="header-info">
         <h1>MC Achievement Fixer</h1>
-        <span class="status-text">{{ statusText }}</span>
+        <span class="status-text">online</span>
       </div>
-      <button @click="toggleMusic" class="changelog-btn" title="Putar/pause musik" :disabled="musicDisabled">{{ musicIcon }}</button>
-      <a class="changelog-btn" href="https://mail.google.com/mail/?view=cm&fs=1&to=fmuhammadgarda@gmail.com&su=Feedback%20MC%20Achievement%20Fixer" target="_blank" rel="noopener" title="Kirim feedback ke developer">✉️</a>
-      <button @click="logout" class="changelog-btn" title="Keluar dari sesi tamu">🚪</button>
+      <button @click="openFeedback" class="changelog-btn" title="Kirim feedback ke developer">✉️</button>
     </header>
-
-    <audio ref="bgmAudio" src="Assets/Sounds/BGM.ogg" loop preload="auto" muted @error="onAudioError"></audio>
 
     <!-- Chat area -->
     <main class="chat-area" ref="chatArea">
+
+      <!-- Step progress ala Minecraft (bar bergaris diagonal) -->
+      <div class="step-progress" role="img" :aria-label="'Langkah ' + currentStep + ' dari 3'">
+        <div class="step-segment" :class="{ active: currentStep === 1 }">
+          <span class="step-num">1.</span> Upload World
+        </div>
+        <div class="step-segment" :class="{ active: currentStep === 2 }">
+          <span class="step-num">2.</span> Proses
+        </div>
+        <div class="step-segment" :class="{ active: currentStep === 3 }">
+          <span class="step-num">3.</span> Selesai (Download)
+        </div>
+      </div>
 
       <div class="date-chip">Bedrock Edition • level.dat Tool</div>
 

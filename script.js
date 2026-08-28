@@ -243,13 +243,6 @@ const { createApp } = Vue;
 createApp({
   data() {
     return {
-      loggedIn: false,
-      guestName: '',
-
-      musicIcon: '🔇',
-      musicDisabled: false,
-      userPaused: false,
-
       isDragover: false,
       selectedFile: null,
       processing: false,
@@ -270,80 +263,55 @@ createApp({
   },
 
   computed: {
-    statusText() {
-      if (!this.loggedIn) return 'online';
-      return this.guestName ? `online • Tamu: ${this.guestName}` : 'online • Tamu';
+    /* 1 = belum diproses (termasuk kalau error/notfound, harus upload ulang),
+       2 = sedang memproses, 3 = sukses & siap download */
+    currentStep() {
+      if (this.processing) return 2;
+      if (this.results.length) {
+        const last = this.results[this.results.length - 1];
+        if (last.kind === 'success') return 3;
+      }
+      return 1;
     }
   },
 
   methods: {
-    /* ---------- Login tamu ---------- */
-    doGuestLogin() {
-      this.loggedIn = true;
-      this.$nextTick(() => this.setupBgm());
-    },
+    /* ---------- Feedback: buka Gmail ---------- */
+    openFeedback() {
+      const email = 'fmuhammadgarda@gmail.com';
+      const subject = 'Feedback MC Achievement Fixer';
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    logout() {
-      this.loggedIn = false;
-      this.guestName = '';
-      this.selectedFile = null;
-      this.results = [];
-    },
+      // Desktop: tetap buka Gmail versi web di tab baru seperti sebelumnya
+      if (!isMobile) {
+        window.open(
+          `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}`,
+          '_blank'
+        );
+        return;
+      }
 
-    /* ---------- BGM: true autoplay via trik muted -> unmute ---------- */
-    setupBgm() {
-      const bgmAudio = this.$refs.bgmAudio;
-      if (!bgmAudio) return;
+      // Mobile: coba buka langsung app Gmail (bukan tab browser) via
+      // custom URL scheme resmi Gmail. Subject sudah otomatis terisi
+      // "Feedback MC Achievement Fixer" sebagai penanda/label email ini.
+      const gmailAppUrl = `googlegmail://co?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}`;
+      const mailtoFallback = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
 
-      bgmAudio.muted = true;
-      bgmAudio.volume = 0.5; // volume dikecilkan 50% agar tidak terlalu kencang
-      bgmAudio.play()
-        .then(() => this.updateMusicBtnIcon())
-        .catch(() => this.updateMusicBtnIcon());
+      let appOpened = false;
+      const onHide = () => { appOpened = true; };
+      document.addEventListener('visibilitychange', onHide, { once: true });
 
-      const unmuteOnFirstInteraction = () => {
-        if (this.userPaused) return;
-        bgmAudio.muted = false;
-        if (bgmAudio.paused) {
-          bgmAudio.play().catch(() => {});
+      window.location.href = gmailAppUrl;
+
+      // Kalau setelah beberapa saat halaman masih terlihat (app Gmail
+      // tidak terpasang / gagal terbuka), fallback ke mailto: biasa
+      // supaya tetap bisa kirim lewat app email default perangkat.
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', onHide);
+        if (!appOpened) {
+          window.location.href = mailtoFallback;
         }
-        this.updateMusicBtnIcon();
-      };
-
-      document.addEventListener('click', unmuteOnFirstInteraction, { once: true });
-      document.addEventListener('touchstart', unmuteOnFirstInteraction, { once: true });
-    },
-
-    updateMusicBtnIcon() {
-      const bgmAudio = this.$refs.bgmAudio;
-      if (!bgmAudio) return;
-      if (bgmAudio.paused) {
-        this.musicIcon = '🔇';
-      } else {
-        this.musicIcon = bgmAudio.muted ? '🔈' : '🔊';
-      }
-    },
-
-    toggleMusic() {
-      const bgmAudio = this.$refs.bgmAudio;
-      if (!bgmAudio) return;
-
-      if (bgmAudio.paused) {
-        this.userPaused = false;
-        bgmAudio.muted = false;
-        bgmAudio.play().catch(() => {});
-      } else if (bgmAudio.muted) {
-        bgmAudio.muted = false;
-      } else {
-        this.userPaused = true;
-        bgmAudio.pause();
-      }
-      this.updateMusicBtnIcon();
-    },
-
-    onAudioError() {
-      this.musicIcon = '🚫';
-      this.musicDisabled = true;
+      }, 1200);
     },
 
     /* ---------- UI: pilih file ---------- */

@@ -130,10 +130,6 @@ body{
   .fake-input{
     max-width: 100%;
   }
-
-  .login-overlay{
-    border-radius: 10px;
-  }
 }
 
 /* Header — top bar of the "pause menu" */
@@ -218,108 +214,6 @@ a.changelog-btn{
   text-decoration: none;
 }
 
-/* Layar login tamu — world-select style */
-.login-overlay{
-  display: flex;
-  position: fixed;
-  inset: 0;
-  background:
-    linear-gradient(rgba(10,12,10,0.55), rgba(10,12,10,0.65)),
-    repeating-linear-gradient(45deg, #3a5a2c 0, #3a5a2c 40px, #345226 40px, #345226 80px);
-  z-index: 100;
-  justify-content: center;
-  align-items: center;
-  padding: 24px;
-}
-
-.login-panel{
-  width: 100%;
-  max-width: 380px;
-  background: linear-gradient(180deg, #46484b, #333537);
-  border-radius: 10px;
-  padding: 32px 24px;
-  text-align: center;
-  box-shadow:
-    0 0 0 4px #000,
-    inset 3px 3px 0 var(--mc-border-hi),
-    inset -3px -3px 0 var(--mc-border-lo),
-    0 8px 24px rgba(0,0,0,0.5);
-  animation: slideDown 0.2s ease;
-}
-
-@keyframes slideDown{
-  from{ transform: translateY(-12px); opacity: 0; }
-  to{ transform: translateY(0); opacity: 1; }
-}
-
-.login-avatar{
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  background: linear-gradient(160deg, var(--mc-green-hi), var(--mc-green-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  margin: 0 auto 14px auto;
-  box-shadow:
-    inset 3px 3px 0 var(--mc-border-hi),
-    inset -4px -4px 0 var(--mc-border-lo);
-}
-
-.login-title{
-  font-family: 'Press Start 2P', 'Nunito', sans-serif;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.6;
-  color: var(--wa-text-dark);
-  text-shadow: 2px 2px 0 rgba(0,0,0,0.6);
-  margin-bottom: 14px;
-}
-
-.login-sub{
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--wa-text-muted);
-  line-height: 1.5;
-  margin-bottom: 18px;
-}
-
-.login-input{
-  width: 100%;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 13.5px;
-  font-family: inherit;
-  font-weight: 700;
-  color: var(--mc-wood-text);
-  background: #d9d4c4;
-  outline: none;
-  margin-bottom: 14px;
-  box-shadow:
-    inset -2px -2px 0 rgba(255,255,255,0.6),
-    inset 2px 2px 0 rgba(0,0,0,0.45);
-  transition: box-shadow 0.2s ease;
-}
-
-.login-input:focus{
-  box-shadow:
-    inset -2px -2px 0 rgba(255,255,255,0.6),
-    inset 2px 2px 0 rgba(0,0,0,0.45),
-    0 0 0 2px var(--mc-green-hi);
-}
-
-.login-btn{
-  margin-bottom: 14px;
-}
-
-.login-note{
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--wa-text-muted);
-}
-
 /* Chat area — deepslate wall */
 .chat-area{
   flex: 1;
@@ -329,6 +223,64 @@ a.changelog-btn{
     repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0, rgba(0,0,0,0.16) 1px, transparent 1px, transparent 12px),
     repeating-linear-gradient(90deg, rgba(0,0,0,0.10) 0, rgba(0,0,0,0.10) 1px, transparent 1px, transparent 12px);
   overflow-y: auto;
+}
+
+/* Step progress — bar 3 langkah bergaris diagonal ala Minecraft */
+.step-progress{
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 2px auto 16px auto;
+  max-width: 100%;
+  box-shadow:
+    0 0 0 3px #1a1204,
+    inset 2px 2px 0 rgba(255,255,255,0.2),
+    inset -2px -2px 0 rgba(0,0,0,0.4),
+    0 3px 5px rgba(0,0,0,0.4);
+}
+
+.step-segment{
+  flex: 1;
+  position: relative;
+  text-align: center;
+  padding: 11px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #f4efe0;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background:
+    repeating-linear-gradient(135deg,
+      var(--mc-wood-dark) 0 10px,
+      #5b3f24 10px 20px);
+  border-right: 2px solid rgba(0,0,0,0.45);
+  transition: background 0.25s ease;
+}
+
+.step-segment:last-child{
+  border-right: none;
+}
+
+.step-segment.active{
+  background:
+    repeating-linear-gradient(135deg,
+      var(--mc-green) 0 10px,
+      var(--mc-green-dark) 10px 20px);
+}
+
+.step-num{
+  opacity: 0.85;
+  margin-right: 3px;
+}
+
+@media (max-width: 420px){
+  .step-segment{
+    font-size: 10.5px;
+    padding: 10px 4px;
+  }
 }
 
 .date-chip{
@@ -725,19 +677,5 @@ a.changelog-btn{
 
   .app-footer{
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-  }
-
-  .login-overlay{
-    padding: 0;
-  }
-
-  .login-panel{
-    border-radius: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    max-width: 100%;
-    box-shadow: none;
   }
 }
