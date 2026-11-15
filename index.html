@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,68 +13,87 @@
 
   <div class="app">
 
-    <!-- Header ala WhatsApp -->
+    <!-- WhatsApp-style header -->
     <header class="app-header">
       <div class="avatar">🏆</div>
       <div class="header-info">
         <h1>MC Achievement Fixer</h1>
         <span class="status-text">online</span>
       </div>
-      <button @click="openFeedback" class="changelog-btn" title="Kirim feedback ke developer">✉️</button>
+      <button @click="openFeedback" class="changelog-btn" title="Send feedback to developer">✉️</button>
     </header>
 
     <!-- Chat area -->
     <main class="chat-area" ref="chatArea">
 
-      <!-- Step progress ala Minecraft (bar bergaris diagonal) -->
-      <div class="step-progress" role="img" :aria-label="'Langkah ' + currentStep + ' dari 3'">
-        <div class="step-segment" :class="{ active: currentStep === 1 }">
-          <span class="step-num">1.</span> Upload World
+      <!-- Animated stepper: Upload > Process > Download -->
+      <div class="stepper" role="img" :aria-label="'Step ' + currentStep + ' of 3'">
+        <div class="step" :class="{ active: currentStep === 1, done: currentStep > 1 }">
+          <div class="step-circle">
+            <span class="step-check" v-if="currentStep > 1">✓</span>
+            <span class="step-icon" v-else>🌍</span>
+          </div>
+          <div class="step-label">Upload</div>
         </div>
-        <div class="step-segment" :class="{ active: currentStep === 2 }">
-          <span class="step-num">2.</span> Proses
+
+        <div class="step-line" :class="{ filled: currentStep > 1 }"><span></span></div>
+
+        <div class="step" :class="{ active: currentStep === 2, done: currentStep > 2 }">
+          <div class="step-circle">
+            <span class="step-check" v-if="currentStep > 2">✓</span>
+            <span class="step-icon spin" v-else-if="currentStep === 2">⚙️</span>
+            <span class="step-icon" v-else>⚙️</span>
+          </div>
+          <div class="step-label">Process</div>
         </div>
-        <div class="step-segment" :class="{ active: currentStep === 3 }">
-          <span class="step-num">3.</span> Selesai (Download)
+
+        <div class="step-line" :class="{ filled: currentStep > 2 }"><span></span></div>
+
+        <div class="step" :class="{ active: currentStep === 3, done: currentStep === 3 }">
+          <div class="step-circle">
+            <span class="step-check pop" v-if="currentStep === 3">✓</span>
+            <span class="step-icon" v-else>⬇️</span>
+          </div>
+          <div class="step-label">Download</div>
         </div>
       </div>
 
       <div class="date-chip">Bedrock Edition • level.dat Tool</div>
 
       <div class="bubble bubble-left">
-        <p>👋 Halo! Tool ini membantu mengaktifkan kembali <b>World Achievements</b> pada dunia Minecraft Bedrock kamu yang sudah ter-nonaktif.</p>
-        <p style="margin-top:6px;">Achievement biasanya nonaktif karena salah satu dari ini pernah terjadi di world kamu:</p>
+        <p>👋 Hi! This tool helps re-enable <b>World Achievements</b> on your Minecraft Bedrock world where they've been disabled.</p>
+        <p style="margin-top:6px;">Achievements are usually disabled because one of these has happened in your world at some point:</p>
         <ul style="margin:6px 0 0 18px;">
-          <li>Pernah dibuka di <b>Creative mode</b></li>
-          <li>Pernah mengaktifkan <b>Cheats/Allow Cheats</b></li>
-          <li>Pernah mengaktifkan salah satu <b>Experimental Gameplay</b> toggle</li>
-          <li>World masih memakai <b>behavior pack / resource pack (add-on)</b></li>
+          <li>It was opened in <b>Creative mode</b></li>
+          <li><b>Cheats/Allow Cheats</b> was turned on</li>
+          <li>Any <b>Experimental Gameplay</b> toggle was enabled</li>
+          <li>The world still uses a <b>behavior pack / resource pack (add-on)</b></li>
         </ul>
-        <p style="margin-top:6px;">Status "disabled" ini tetap tersimpan di file world meskipun semua opsi di atas sudah dimatikan/dilepas secara manual di dalam game.</p>
+        <p style="margin-top:6px;">This "disabled" status stays saved in the world file even after all the options above are manually turned off/removed in-game.</p>
         <span class="time">10:00</span>
       </div>
 
       <div class="bubble bubble-left">
-        <p><b>📍 Lokasi folder world Minecraft</b></p>
-        <p style="margin-top:6px;"><b>Android :</b><br>
+        <p><b>📍 Minecraft world folder location</b></p>
+        <p style="margin-top:6px;"><b>Android:</b><br>
         <code>Android/data/com.mojang.minecraftpe/files/games/com.mojang/minecraftWorlds</code></p>
-        <p style="margin-top:6px;"><b>CATATAN PENTING :</b> <u>Di Android 11+, folder ini tidak bisa diakses langsung karena pembatasan storage. Gunakan fitur <i>Export</i> di dalam Minecraft untuk mengekspor world ke file .mcworld agar bisa diupload ke tool ini.</u></p>
-        <p style="margin-top:6px;"><b>Windows : Klik Windows + R lalu ketik <code>%appdata%</code></b><br>
+        <p style="margin-top:6px;"><b>IMPORTANT NOTE:</b> <u>On Android 11+, this folder can't be accessed directly due to storage restrictions. Use Minecraft's <i>Export</i> feature to export the world to an .mcworld file so you can upload it to this tool.</u></p>
+        <p style="margin-top:6px;"><b>Windows: Press Windows + R then type <code>%appdata%</code></b><br>
         <code>C:/Users/Hp/AppData/Roaming/Minecraft Bedrock/Users/11907246186634818286/games/com.mojang/minecraftWorlds</code></p>
         <span class="time">10:01</span>
       </div>
 
       <div class="bubble bubble-left">
-        <p><b>Cara siapkan file world untuk diupload:</b><br>
-        1️⃣ <b>Cara termudah:</b> di dalam Minecraft, buka Settings world → <i>Export</i> → simpan sebagai <code>.mcworld</code><br>
-        2️⃣ <b>Cara manual:</b> masuk ke folder <code>minecraftWorlds</code> di atas, cari folder world kamu (nama acak seperti kode), lalu kompres/zip seluruh folder tersebut dan ganti ekstensinya jadi <code>.mcworld</code><br>
-        3️⃣ Upload file <code>.mcworld</code> itu langsung di bawah ini 👇</p>
+        <p><b>How to prepare your world file for upload:</b><br>
+        1️⃣ <b>Easiest way:</b> in Minecraft, open the world's Settings → <i>Export</i> → save as <code>.mcworld</code><br>
+        2️⃣ <b>Manual way:</b> go to the <code>minecraftWorlds</code> folder above, find your world's folder (a random code-like name), then compress/zip the entire folder and rename the extension to <code>.mcworld</code><br>
+        3️⃣ Upload that <code>.mcworld</code> file right below 👇</p>
         <span class="time">10:01</span>
       </div>
 
       <div class="bubble bubble-left warn">
-        <p>⚠️ Selalu <b>backup</b> world kamu dulu sebelum diproses. Tool ini mengubah beberapa flag di level.dat dan bisa melepas behavior/resource pack dari world.</p>
-        <p style="margin-top:6px;">Jika world kamu bergantung pada blok/item custom dari add-on, atau dibuat dengan Experimental Gameplay, konten tersebut berpotensi berubah jadi "unknown"/hilang setelah pack dilepas. Achievement akan aktif, tapi cek dulu world-nya baik-baik sebelum dipakai permanen.</p>
+        <p>⚠️ Always <b>back up</b> your world before processing. This tool changes several flags in level.dat and can remove behavior/resource packs from the world.</p>
+        <p style="margin-top:6px;">If your world depends on custom blocks/items from an add-on, or was built using Experimental Gameplay, that content may turn into "unknown" or disappear once the pack is removed. Achievements will become active, but check the world carefully before relying on it permanently.</p>
         <span class="time">10:01</span>
       </div>
 
@@ -84,109 +103,185 @@
         <div class="dropzone" :class="{ dragover: isDragover }" @click="triggerFileInput" @dragover.prevent="isDragover = true" @dragleave.prevent="isDragover = false" @drop.prevent="onDrop">
           <input type="file" ref="fileInput" accept=".mcworld,.zip" hidden @change="onFileChange">
           <div class="drop-icon">🌍</div>
-          <p v-if="!selectedFile">Tap untuk pilih file .mcworld, atau drag & drop di sini</p>
+          <p v-if="!selectedFile">Tap to choose an .mcworld file, or drag & drop here</p>
           <p v-else><span class="file-selected">✅ {{ selectedFile.name }}</span> ({{ (selectedFile.size/1024).toFixed(1) }} KB)</p>
         </div>
 
         <div class="info-fix-list">
-          <p style="font-size:12.5px; color:var(--wa-text-muted); margin-bottom:8px;"><b>Yang otomatis diperbaiki:</b> <span style="font-weight:400;">(default semua aktif, matikan yang tidak diinginkan)</span></p>
+          <p style="font-size:12.5px; color:var(--wa-text-muted); margin-bottom:8px;"><b>What gets fixed automatically:</b> <span style="font-weight:400;">(all enabled by default, turn off anything you don't want)</span></p>
 
-          <label class="toggle-row">
-            <span class="toggle-label"><code>hasBeenLoadedInCreative</code></span>
-            <span class="switch"><input type="checkbox" v-model="toggles.hasBeenLoadedInCreative"><span class="slider"></span></span>
+          <label class="toggle-row master-toggle-row">
+            <span class="toggle-label master-toggle-label">⭐ <b>Achievement Active</b><br><span class="master-toggle-hint">Master switch — turns every fix below on/off at once</span></span>
+            <span class="switch"><input type="checkbox" v-model="masterToggle"><span class="slider"></span></span>
           </label>
 
-          <label class="toggle-row">
-            <span class="toggle-label"><code>cheatsEnabled</code></span>
-            <span class="switch"><input type="checkbox" v-model="toggles.cheatsEnabled"><span class="slider"></span></span>
-          </label>
+          <button type="button" class="advanced-toggle-btn" @click="showAdvanced = !showAdvanced">
+            <span>{{ showAdvanced ? '▲ Hide individual fixes' : '▼ Customize individual fixes' }}</span>
+          </button>
 
-          <label class="toggle-row">
-            <span class="toggle-label"><code>commandsEnabled</code></span>
-            <span class="switch"><input type="checkbox" v-model="toggles.commandsEnabled"><span class="slider"></span></span>
-          </label>
+          <div class="advanced-toggles" v-show="showAdvanced">
+            <label class="toggle-row">
+              <span class="toggle-label"><code>hasBeenLoadedInCreative</code></span>
+              <span class="switch"><input type="checkbox" v-model="toggles.hasBeenLoadedInCreative"><span class="slider"></span></span>
+            </label>
 
-          <label class="toggle-row">
-            <span class="toggle-label"><code>GameType</code> → dipaksa ke Survival</span>
-            <span class="switch"><input type="checkbox" v-model="toggles.gameType"><span class="slider"></span></span>
-          </label>
+            <label class="toggle-row">
+              <span class="toggle-label"><code>cheatsEnabled</code></span>
+              <span class="switch"><input type="checkbox" v-model="toggles.cheatsEnabled"><span class="slider"></span></span>
+            </label>
 
-          <label class="toggle-row">
-            <span class="toggle-label"><code>experiments_ever_used</code>, <code>saved_with_toggled_experiments</code>, & semua toggle di dalam <code>experiments</code> dimatikan (apa pun namanya, otomatis terdeteksi)</span>
-            <span class="switch"><input type="checkbox" v-model="toggles.experiments"><span class="slider"></span></span>
-          </label>
+            <label class="toggle-row">
+              <span class="toggle-label"><code>commandsEnabled</code></span>
+              <span class="switch"><input type="checkbox" v-model="toggles.commandsEnabled"><span class="slider"></span></span>
+            </label>
 
-          <label class="toggle-row">
-            <span class="toggle-label"><code>educationFeaturesEnabled</code> → nonaktifkan Education Edition</span>
-            <span class="switch"><input type="checkbox" v-model="toggles.education"><span class="slider"></span></span>
-          </label>
+            <label class="toggle-row">
+              <span class="toggle-label"><code>GameType</code> → forced to Survival</span>
+              <span class="switch"><input type="checkbox" v-model="toggles.gameType"><span class="slider"></span></span>
+            </label>
 
-          <label class="toggle-row">
-            <span class="toggle-label"><code>IsHardcore</code> → nonaktifkan Hardcore Mode</span>
-            <span class="switch"><input type="checkbox" v-model="toggles.hardcore"><span class="slider"></span></span>
-          </label>
+            <label class="toggle-row">
+              <span class="toggle-label"><code>experiments_ever_used</code>, <code>saved_with_toggled_experiments</code>, & every toggle inside <code>experiments</code> turned off (whatever their names, auto-detected)</span>
+              <span class="switch"><input type="checkbox" v-model="toggles.experiments"><span class="slider"></span></span>
+            </label>
 
-          <label class="toggle-row">
-            <span class="toggle-label">Melepas behavior pack & resource pack dari world</span>
-            <span class="switch"><input type="checkbox" v-model="toggles.packs"><span class="slider"></span></span>
-          </label>
+            <label class="toggle-row">
+              <span class="toggle-label"><code>educationFeaturesEnabled</code> → disable Education Edition</span>
+              <span class="switch"><input type="checkbox" v-model="toggles.education"><span class="slider"></span></span>
+            </label>
+
+            <label class="toggle-row">
+              <span class="toggle-label"><code>IsHardcore</code> → disable Hardcore Mode</span>
+              <span class="switch"><input type="checkbox" v-model="toggles.hardcore"><span class="slider"></span></span>
+            </label>
+
+            <label class="toggle-row">
+              <span class="toggle-label">Remove behavior pack & resource pack from the world</span>
+              <span class="switch"><input type="checkbox" v-model="toggles.packs"><span class="slider"></span></span>
+            </label>
+          </div>
         </div>
 
-        <button @click="processWorld" class="btn-main" :disabled="!selectedFile || processing">{{ processing ? 'Memproses world...' : 'Proses World & Aktifkan Achievement' }}</button>
+        <!-- Rename world -->
+        <div class="rename-section">
+          <label class="toggle-row">
+            <span class="toggle-label">
+              ✏️ Rename World <code>LevelName</code>
+              <br v-if="selectedFile">
+              <span v-if="nameCheckPending" class="current-name-hint">Reading world name...</span>
+              <span v-else-if="currentWorldName" class="current-name-hint">Current name: "{{ currentWorldName }}"</span>
+              <span v-else-if="selectedFile" class="current-name-hint">LevelName tag not detected</span>
+            </span>
+            <span class="switch"><input type="checkbox" v-model="toggles.renameWorld"><span class="slider"></span></span>
+          </label>
+
+          <input
+            v-if="toggles.renameWorld"
+            type="text"
+            v-model.trim="newWorldName"
+            maxlength="80"
+            class="rename-input"
+            placeholder="Enter new world name..."
+          >
+          <p v-if="toggles.renameWorld" class="rename-hint">Leave blank = world name stays unchanged.</p>
+        </div>
+
+        <button @click="processWorld" class="btn-main" :disabled="!selectedFile || processing">
+          <span v-if="processing" class="btn-spinner" aria-hidden="true"></span>
+          {{ processing ? 'Processing world...' : 'Process World & Activate Achievements' }}
+        </button>
       </div>
 
-      <!-- Hasil proses -->
+      <!-- Processing results -->
       <div v-for="r in results" :key="r.id" class="bubble result-bubble" :class="{ error: r.kind === 'error' || r.kind === 'notfound' }">
 
         <template v-if="r.kind === 'success'">
-          <p><b>✅ World selesai diproses!</b></p>
+          <p class="success-banner"><span class="success-icon">✅</span> <b>World processed successfully!</b></p>
 
-          <p style="margin-top:8px; font-size:13px;"><b>Experimental Gameplay:</b></p>
-          <ul style="margin:4px 0 0 18px;">
-            <template v-for="(exp, i) in r.expResults" :key="'exp'+i">
-              <li v-if="!exp.found">Compound <code>experiments</code> tidak ditemukan (world tidak pakai experiment)</li>
-              <li v-else-if="exp.disabled.length === 0">Ditemukan, tapi semua toggle sudah 0 (tidak ada yang aktif)</li>
-              <template v-else>
-                <li v-for="(d, j) in exp.disabled" :key="'d'+j"><code>{{ d.name }}</code>: dimatikan ({{ d.before }} ➜ 0)</li>
+          <div class="success-summary">
+            <span v-if="r.expDisabledCount > 0" class="summary-chip">🧪 {{ r.expDisabledCount }} experiment{{ r.expDisabledCount === 1 ? '' : 's' }} off</span>
+            <span v-if="r.flagsFixedCount > 0" class="summary-chip">🚩 {{ r.flagsFixedCount }} flag{{ r.flagsFixedCount === 1 ? '' : 's' }} fixed</span>
+            <span v-if="r.packsRemovedCount > 0" class="summary-chip">📦 {{ r.packsRemovedCount }} pack{{ r.packsRemovedCount === 1 ? '' : 's' }} removed</span>
+            <span v-if="r.renameResult" class="summary-chip">✏️ renamed</span>
+          </div>
+
+          <details class="result-section" open>
+            <summary class="result-section-summary">🧪 Experimental Gameplay</summary>
+            <div class="result-section-body">
+              <template v-for="(exp, i) in r.expResults" :key="'exp'+i">
+                <p v-if="!exp.found" class="result-note">The <code>experiments</code> compound was not found (world doesn't use experiments)</p>
+                <p v-else-if="exp.disabled.length === 0" class="result-note">Found, but all toggles were already 0 (none active)</p>
+                <template v-else>
+                  <div v-for="(d, j) in exp.disabled" :key="'d'+j" class="result-item-row">
+                    <code class="result-item-name">{{ d.name }}</code>
+                    <span class="result-item-value">{{ d.before }} ➜ 0</span>
+                  </div>
+                </template>
               </template>
-            </template>
-          </ul>
+            </div>
+          </details>
 
-          <p style="margin-top:8px; font-size:13px;"><b>Flag di level.dat:</b></p>
-          <ul style="margin:4px 0 0 18px;">
-            <li v-for="(f, i) in r.flagResults" :key="'flag'+i">
-              <code>{{ f.name }}</code>:
-              <template v-if="f.found">{{ f.beforeLabel }} ➜ {{ f.afterLabel }}</template>
-              <template v-else>tidak ditemukan (dilewati)</template>
-            </li>
-          </ul>
+          <details class="result-section" open>
+            <summary class="result-section-summary">🚩 Flags in level.dat</summary>
+            <div class="result-section-body">
+              <div v-for="(f, i) in r.flagResults" :key="'flag'+i" class="result-item-row" :class="{ muted: !f.found }">
+                <code class="result-item-name">{{ f.name }}</code>
+                <span v-if="f.found" class="result-item-value">{{ f.beforeLabel }} ➜ {{ f.afterLabel }}</span>
+                <span v-else class="result-item-value muted">not found</span>
+              </div>
+            </div>
+          </details>
 
-          <p style="margin-top:10px; font-size:13px;"><b>Behavior/Resource Pack:</b></p>
-          <ul style="margin:4px 0 0 18px;">
-            <li v-for="(p, i) in r.packResults" :key="'pack'+i">
-              <code>{{ p.name }}</code>:
-              <template v-if="!p.found">file tidak ada (world tidak pakai add-on)</template>
-              <template v-else-if="p.removedCount > 0">{{ p.removedCount }} pack dilepas dari world</template>
-              <template v-else-if="p.removedCount === -1">isi dikosongkan</template>
-              <template v-else>sudah kosong, tidak ada pack aktif</template>
-            </li>
-          </ul>
+          <details class="result-section" open>
+            <summary class="result-section-summary">📦 Behavior/Resource Pack</summary>
+            <div class="result-section-body">
+              <div v-for="(p, i) in r.packResults" :key="'pack'+i" class="result-item-row" :class="{ muted: !p.found }">
+                <code class="result-item-name">{{ p.name }}</code>
+                <span class="result-item-value" :class="{ muted: !p.found }">
+                  <template v-if="!p.found">not present</template>
+                  <template v-else-if="p.removedCount > 0">{{ p.removedCount }} removed</template>
+                  <template v-else-if="p.removedCount === -1">cleared</template>
+                  <template v-else>already empty</template>
+                </span>
+              </div>
+            </div>
+          </details>
 
-          <p v-if="r.expDisabledCount > 0" style="margin-top:8px; font-size:12.5px; color:var(--wa-teal-green);">✅ Toggle experimental di atas berhasil dimatikan di file. Berdasarkan pengujian, mematikan toggle ini <b>terbukti bisa mengaktifkan kembali achievement</b> untuk world yang sebelumnya terkunci karena Experimental Gameplay — walau dialog resmi Mojang menyebutnya permanen. Hasil bisa bervariasi tergantung versi game/perangkat, jadi tetap cek notifikasi achievement setelah masuk ke world.</p>
+          <p v-if="r.expDisabledCount > 0" class="result-callout success">✅ The experimental toggles above were successfully turned off in the file. Based on testing, turning off these toggles <b>has proven to re-enable achievements</b> for worlds previously locked due to Experimental Gameplay — even though Mojang's official dialog calls it permanent. Results may vary depending on game version/device, so still check for the achievement notification after loading the world.</p>
 
-          <p v-if="r.packRemoved" style="margin-top:8px; font-size:12.5px; color:var(--wa-danger-text);">⚠️ Add-on/behavior pack dilepas dari world ini. Jika world bergantung pada blok/item custom dari pack tersebut, sebagian konten bisa hilang atau berubah jadi "unknown". Pastikan sudah backup!</p>
+          <p v-if="r.packRemoved" class="result-callout warn">⚠️ An add-on/behavior pack was removed from this world. If your world depends on custom blocks/items from that pack, some content may disappear or turn into "unknown". Make sure you've backed up first!</p>
 
-          <p style="margin-top:8px;"><b>Cara pakai hasilnya:</b><br>
-          Cara termudah — tap file hasil download, Minecraft akan otomatis meng-import world ini sebagai world baru.<br><br>
-          Atau cara manual — ganti world lama kamu di folder:<br>
-          <code>minecraftWorlds/&lt;nama-folder-world&gt;</code><br>
-          dengan isi hasil extract file ini.</p>
-          <a class="download-btn" :href="r.downloadUrl" :download="r.downloadName">⬇️ Download {{ r.downloadName }}</a>
+          <p v-if="r.renameResult" class="result-callout info">
+            <b>✏️ World Name:</b> "{{ r.renameResult.before }}" ➜ "{{ r.renameResult.after }}"
+          </p>
+
+          <!-- Edit output file / folder name -->
+          <div class="output-name-edit">
+            <label class="output-name-label">📁 Output file / folder name</label>
+            <div class="output-name-row">
+              <input
+                type="text"
+                v-model.trim="r.downloadBaseName"
+                maxlength="80"
+                class="output-name-input"
+                @blur="sanitizeOutputName(r)"
+              >
+              <span class="output-name-ext">.mcworld</span>
+            </div>
+            <p class="output-name-hint">This is the downloaded file's name — also used as the folder name if you extract it manually.</p>
+          </div>
+
+          <p class="howto-text"><b>How to use the result:</b><br>
+          Easiest way — tap the downloaded file, Minecraft will automatically import this world as a new world.<br><br>
+          Or manually — replace your old world in the folder:<br>
+          <code>minecraftWorlds/&lt;world-folder-name&gt;</code><br>
+          with the extracted contents of this file.</p>
+          <a class="download-btn glow-pulse" :href="r.downloadUrl" :download="r.downloadBaseName + '.mcworld'">⬇️ Download {{ r.downloadBaseName }}.mcworld</a>
         </template>
 
         <template v-else-if="r.kind === 'notfound'">
-          <p>❌ Tidak ada flag achievement maupun behavior/resource pack yang perlu diperbaiki di world ini.</p>
-          <p style="margin-top:6px;">Kemungkinan world memang belum pernah menonaktifkan achievement (harusnya sudah aktif), atau struktur world tidak standar.</p>
+          <p>❌ No achievement flags or behavior/resource packs needed fixing in this world.</p>
+          <p style="margin-top:6px;">The world likely never had achievements disabled (they should already be active), or the world structure isn't standard.</p>
         </template>
 
         <template v-else>
@@ -198,10 +293,10 @@
 
     </main>
 
-    <!-- Footer input bar (dekorasi ala WA) -->
+    <!-- Footer input bar (WA-style decoration) -->
     <footer class="app-footer">
-      <div class="fake-input">Client-side only • Tidak ada data dikirim ke server 🔒</div>
-      <div class="credit-footer">Dibuat Oleh GardaBoy ©2026 All Right Reserved</div>
+      <div class="fake-input">Client-side only • No data is sent to any server 🔒</div>
+      <div class="credit-footer">Made by GardaBoy ©2026 All Rights Reserved</div>
     </footer>
 
   </div>
