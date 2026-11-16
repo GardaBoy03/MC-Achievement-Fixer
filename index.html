@@ -1222,6 +1222,108 @@ html{ color-scheme: dark; }
   }
 }
 
+
+/* ---------- Info dropdown ---------- */
+.info-dropdown{ margin-bottom: 12px; }
+.info-toggle{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--ore-radius-lg);
+  background: var(--mc-wood);
+  border: 1px solid var(--mc-border-hi);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  color: var(--mc-wood-text);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: filter .15s ease;
+}
+.info-toggle:hover{ filter: brightness(1.12); }
+.info-toggle .info-title{ flex: 1; }
+.info-toggle .info-title b{ color: var(--mc-gold); }
+.info-toggle .chevron{
+  font-size: 12px;
+  color: var(--mc-gold);
+  transition: transform .25s ease;
+}
+.info-dropdown.open .chevron{ transform: rotate(180deg); }
+
+.info-body{
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .3s ease;
+}
+.info-dropdown.open .info-body{ grid-template-rows: 1fr; }
+.info-inner{ overflow: hidden; min-height: 0; padding-top: 0; }
+.info-dropdown.open .info-inner{ padding-top: 12px; }
+.info-inner .bubble:last-child{ margin-bottom: 0; }
+
+
+/* ---------- Feedback modal ---------- */
+.fb-overlay{
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  animation: fbFade .2s ease both;
+}
+@keyframes fbFade{ from{ opacity:0; } to{ opacity:1; } }
+.fb-modal{
+  width: 100%; max-width: 440px; max-height: 92vh; overflow-y: auto;
+  background: var(--mc-panel);
+  border: 1px solid var(--mc-border-hi);
+  border-radius: var(--ore-radius-lg);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.55);
+  padding: 16px;
+  color: var(--mc-wood-text);
+  animation: bubbleIn .25s ease both;
+}
+.fb-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 4px; }
+.fb-head h2{ font-size: 16px; font-weight: 800; color: var(--mc-gold); margin: 0; }
+.fb-close{
+  background: rgba(255,255,255,0.08); border: none; color: #fff;
+  width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 14px;
+}
+.fb-close:hover{ background: rgba(255,255,255,0.16); }
+.fb-sub{ font-size: 12.5px; opacity: .7; margin: 0 0 12px; font-weight: 600; }
+.fb-label{ display:block; font-size: 12.5px; font-weight: 800; margin: 12px 0 6px; color: var(--mc-gold); }
+.fb-types{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.fb-type{
+  padding: 9px 10px; border-radius: 10px; cursor: pointer;
+  background: var(--mc-panel-alt); border: 1px solid var(--mc-border-hi);
+  color: var(--mc-wood-text); font-family: inherit; font-size: 13px; font-weight: 700;
+  text-align: left; transition: border-color .15s ease, background .15s ease;
+}
+.fb-type:hover{ background: #353b46; }
+.fb-type.active{ border-color: var(--mc-gold); background: rgba(255,216,77,0.1); color: #fff; }
+.fb-text, .fb-modal textarea{
+  width: 100%; box-sizing: border-box; resize: vertical;
+  background: rgba(0,0,0,0.3); border: 1px solid var(--mc-border-hi);
+  border-radius: 10px; padding: 10px 12px; color: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 600; line-height: 1.45;
+}
+.fb-modal textarea:focus{ outline: none; border-color: var(--mc-gold); }
+.fb-count{ text-align:right; font-size: 11px; opacity: .5; margin-top: 3px; font-weight: 700; }
+.fb-check{ display:flex; align-items:flex-start; gap: 8px; margin-top: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.fb-check input{ margin-top: 2px; accent-color: var(--mc-green); }
+.fb-check small{ display:block; opacity: .55; font-weight: 600; }
+.fb-actions{ display:flex; gap: 8px; margin-top: 14px; }
+.fb-btn{
+  flex: 1; padding: 11px 12px; border: none; border-radius: 10px; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 800;
+  background: var(--mc-panel-alt); color: #fff; box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+}
+.fb-btn.primary{ background: var(--mc-green); box-shadow: 0 3px 0 var(--mc-green-dark); }
+.fb-btn:disabled{ opacity: .45; cursor: not-allowed; }
+.fb-btn:active:not(:disabled){ transform: translateY(2px); box-shadow: none; }
+.fb-note{ font-size: 12px; margin-top: 8px; color: var(--mc-green-hi); font-weight: 700; min-height: 16px; }
+
 </style>
 </head>
 <body>
@@ -1237,7 +1339,7 @@ html{ color-scheme: dark; }
         <h1>MC Achievement Fixer</h1>
         <span class="status-text">online</span>
       </div>
-      <button @click="openFeedback" class="changelog-btn" title="Send feedback to developer">✉️</button>
+      <button @click="openFeedback" class="changelog-btn" title="Report a bug / send feedback">✉️</button>
     </header>
 
     <!-- Chat area -->
@@ -1277,6 +1379,13 @@ html{ color-scheme: dark; }
 
       <div class="date-chip">Bedrock Edition • level.dat Tool</div>
 
+      <div class="info-dropdown" :class="{ open: !infoHidden }">
+      <button class="info-toggle" @click="infoHidden = !infoHidden" :aria-expanded="!infoHidden ? 'true' : 'false'">
+        <span>ℹ️</span>
+        <span class="info-title"><b>Info &amp; instructions</b> <span style="font-weight:600;opacity:.6;">({{ infoHidden ? 'tap to show' : 'tap to hide' }})</span></span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="info-body"><div class="info-inner">
       <div class="bubble bubble-left">
         <p>👋 Hi! This tool helps re-enable <b>World Achievements</b> on your Minecraft Bedrock world where they've been disabled.</p>
         <p style="margin-top:6px;">Achievements are usually disabled because one of these has happened in your world at some point:</p>
@@ -1312,6 +1421,9 @@ html{ color-scheme: dark; }
         <p>⚠️ Always <b>back up</b> your world before processing. This tool changes several flags in level.dat and can remove behavior/resource packs from the world.</p>
         <p style="margin-top:6px;">If your world depends on custom blocks/items from an add-on, or was built using Experimental Gameplay, that content may turn into "unknown" or disappear once the pack is removed. Achievements will become active, but check the world carefully before relying on it permanently.</p>
         <span class="time">10:01</span>
+      </div>
+
+      </div></div>
       </div>
 
       <!-- Upload card -->
@@ -1516,6 +1628,41 @@ html{ color-scheme: dark; }
       <div class="credit-footer">Made by GardaBoy ©2026 All Rights Reserved</div>
     </footer>
 
+  </div>
+
+  <!-- Feedback modal -->
+  <div v-if="fb.open" class="fb-overlay" @click.self="closeFeedback" @keydown.esc="closeFeedback">
+    <div class="fb-modal" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
+      <div class="fb-head">
+        <h2 id="fbTitle">✉️ Send feedback</h2>
+        <button class="fb-close" @click="closeFeedback" aria-label="Close">✕</button>
+      </div>
+      <p class="fb-sub">Report a bug, share an idea, or ask something. It's sent by email to the developer.</p>
+
+      <span class="fb-label">What kind of message?</span>
+      <div class="fb-types">
+        <button v-for="t in feedbackTypes" :key="t.id" class="fb-type" :class="{ active: fb.type === t.id }" @click="fb.type = t.id">
+          {{ t.icon }} {{ t.label }}
+        </button>
+      </div>
+
+      <label class="fb-label" for="fbMsg">{{ currentFeedbackType.title }}</label>
+      <textarea id="fbMsg" v-model="fb.message" rows="6" maxlength="1500" :placeholder="currentFeedbackType.placeholder"></textarea>
+      <div class="fb-count">{{ fb.message.length }}/1500</div>
+
+      <label class="fb-check">
+        <input type="checkbox" v-model="fb.includeInfo">
+        <span>Include device info
+          <small>Browser, screen size & language (no world file or personal data) — helps me reproduce bugs.</small>
+        </span>
+      </label>
+
+      <div class="fb-actions">
+        <button class="fb-btn" @click="copyFeedback" :disabled="!fb.message.trim()">📋 Copy</button>
+        <button class="fb-btn primary" @click="sendFeedback" :disabled="!fb.message.trim()">📨 Send via email</button>
+      </div>
+      <div class="fb-note">{{ fb.note }}</div>
+    </div>
   </div>
 
 </div>
@@ -1860,6 +2007,9 @@ const ACHIEVEMENT_TOGGLE_KEYS = [
 const { createApp } = Vue;
 
 createApp({
+  mounted() {
+    window.addEventListener('keydown', e => { if (e.key === 'Escape' && this.fb.open) this.fb.open = false; });
+  },
   data() {
     return {
       isDragover: false,
@@ -1884,11 +2034,29 @@ createApp({
       newWorldName: '',
       nameCheckPending: false,
 
-      results: []
+      results: [],
+
+      infoHidden: true,
+
+      fb: { open: false, type: 'bug', message: '', includeInfo: true, note: '' },
+      feedbackTypes: [
+        { id: 'bug', icon: '🐞', label: 'Bug report', title: 'Describe the bug',
+          placeholder: 'What happened? What did you expect? Steps to reproduce (e.g. 1. upload world, 2. press Process…). Was the world exported from Android or Windows?' },
+        { id: 'suggestion', icon: '💡', label: 'Suggestion', title: 'Your suggestion',
+          placeholder: 'What feature or improvement would you like to see?' },
+        { id: 'question', icon: '❓', label: 'Question', title: 'Your question',
+          placeholder: 'What would you like to know?' },
+        { id: 'other', icon: '💬', label: 'Other', title: 'Your message',
+          placeholder: 'Anything else you want to tell the developer…' }
+      ]
     };
   },
 
   computed: {
+    currentFeedbackType() {
+      return this.feedbackTypes.find(t => t.id === this.fb.type) || this.feedbackTypes[0];
+    },
+
     /* 1 = not processed yet (including error/notfound, needs a
        fresh upload), 2 = currently processing, 3 = success & ready
        to download */
@@ -1918,44 +2086,69 @@ createApp({
   },
 
   methods: {
-    /* ---------- Feedback: open Gmail ---------- */
+    /* ---------- Feedback: modal + email ---------- */
     openFeedback() {
+      this.fb.note = '';
+      this.fb.open = true;
+    },
+    closeFeedback() {
+      this.fb.open = false;
+    },
+    buildFeedback() {
+      const t = this.currentFeedbackType;
+      const subject = `[${t.label}] MC Achievement Fixer`;
+      let body = this.fb.message.trim();
+      if (this.fb.includeInfo) {
+        body += '\n\n--- Device info ---\n' +
+          `Browser: ${navigator.userAgent}\n` +
+          `Screen: ${screen.width}x${screen.height}\n` +
+          `Language: ${navigator.language}`;
+      }
+      return { subject, body };
+    },
+    sendFeedback() {
+      if (!this.fb.message.trim()) return;
       const email = 'fmuhammadgarda@gmail.com';
-      const subject = 'Feedback MC Achievement Fixer';
+      const { subject, body } = this.buildFeedback();
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const q = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
-      // Desktop: still open Gmail's web version in a new tab as before
       if (!isMobile) {
+        // Desktop: Gmail web compose in a new tab
         window.open(
-          `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}`,
+          `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
           '_blank'
         );
+        this.fb.note = 'Gmail opened in a new tab — press Send there.';
         return;
       }
 
-      // Mobile: try to open the Gmail app directly (not a browser tab)
-      // via Gmail's official custom URL scheme. The subject is already
-      // pre-filled with "Feedback MC Achievement Fixer" as a label for
-      // this email.
-      const gmailAppUrl = `googlegmail://co?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}`;
-      const mailtoFallback = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
+      // Mobile: try the Gmail app first, fall back to the default mail app
+      const gmailAppUrl = `googlegmail://co?to=${encodeURIComponent(email)}&${q}`;
+      const mailtoFallback = `mailto:${email}?${q}`;
 
       let appOpened = false;
       const onHide = () => { appOpened = true; };
       document.addEventListener('visibilitychange', onHide, { once: true });
-
       window.location.href = gmailAppUrl;
 
-      // If the page is still visible after a short delay (the Gmail
-      // app isn't installed / failed to open), fall back to a regular
-      // mailto: link so it can still be sent via the device's default
-      // mail app.
       setTimeout(() => {
         document.removeEventListener('visibilitychange', onHide);
         if (!appOpened) {
           window.location.href = mailtoFallback;
         }
       }, 1200);
+      this.fb.note = 'Opening your mail app — press Send there.';
+    },
+    async copyFeedback() {
+      const { subject, body } = this.buildFeedback();
+      const text = `To: fmuhammadgarda@gmail.com\nSubject: ${subject}\n\n${body}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        this.fb.note = '✓ Copied. Paste it into any email or chat.';
+      } catch (e) {
+        this.fb.note = "Couldn't copy automatically — please select the text and copy it manually.";
+      }
     },
 
     /* ---------- UI: pick a file ---------- */
