@@ -2,10 +2,1227 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MC Achievement Fixer</title>
-<link rel="stylesheet" href="style.css">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* === Ore UI palette — Minecraft Bedrock Edition's modern flat interface:
+     dark slate panels, grass green action buttons, gold focus highlight === */
+  --mc-bg: #14171c;
+  --mc-bg-accent: #1a1e24;
+  --mc-panel: #22262d;
+  --mc-panel-alt: #2c313a;
+  --mc-slot: #343a44;
+  --mc-slot-dark: #22262d;
+  --mc-border-hi: rgba(255,255,255,0.08);
+  --mc-border-lo: rgba(0,0,0,0.4);
+
+  --mc-wood: #2c313a;
+  --mc-wood-dark: #22262d;
+  --mc-wood-text: #eef1f5;
+
+  --mc-green: #4caf32;
+  --mc-green-dark: #2c6e1c;
+  --mc-green-hi: #74d956;
+  --mc-emerald: #1f8f5f;
+  --mc-emerald-dark: #12583b;
+
+  --mc-red: #e2483c;
+  --mc-red-dark: #9c2b22;
+  --mc-red-bg: #241512;
+
+  --mc-gold: #ffd84d;
+  --mc-gold-dark: #caa520;
+  --mc-gold-text: #3a2a04;
+
+  --wa-teal-green: var(--mc-green);
+  --wa-dark-green: #1a1e24;
+  --wa-light-green: var(--mc-green-hi);
+  --wa-bubble-out: var(--mc-emerald);
+  --wa-bubble-in: var(--mc-wood);
+  --wa-bg: var(--mc-bg);
+  --wa-text-dark: #eef1f5;
+  --wa-text-muted: #98a2b3;
+  --wa-danger: var(--mc-red-bg);
+  --wa-danger-text: #ff9d92;
+
+  --ore-radius-lg: 14px;
+  --ore-radius-md: 10px;
+  --ore-radius-sm: 7px;
+}
+
+*{
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body{
+  height: 100%;
+}
+
+html{
+  overflow-x: hidden;
+}
+
+body{
+  font-family: 'Nunito', 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  background: var(--mc-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* Flat Ore UI "raised"/"pressed" helpers (soft bottom-ridge depth, no pixel bevel) */
+.pixel-bevel-out{
+  box-shadow: 0 2px 0 var(--mc-border-lo);
+}
+.pixel-bevel-in{
+  box-shadow: inset 0 2px 0 var(--mc-border-lo);
+}
+
+.app{
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background: var(--mc-bg-accent);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 40px rgba(0,0,0,0.6);
+  position: relative;
+}
+
+/* ============ Wide screens / desktop — fills the whole viewport ============ */
+@media (min-width: 769px){
+  body{
+    background: var(--mc-bg);
+    padding: 0;
+    margin: 0;
+    display: block;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .app{
+    max-width: none;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+  }
+
+  .app-header{
+    padding: 12px 32px;
+  }
+
+  .app .chat-area{
+    /* full width so the scrollbar sits at the far right edge;
+       side padding keeps the content centered at 860px max */
+    padding: 24px max(32px, calc((100% - 860px) / 2 + 32px)) 110px max(32px, calc((100% - 860px) / 2 + 32px));
+    background: var(--mc-bg);
+    max-width: none;
+    width: 100%;
+    margin: 0;
+  }
+
+  .bubble{
+    max-width: 65%;
+    font-size: 14px;
+  }
+
+  .result-bubble{
+    max-width: 65%;
+  }
+
+  .upload-card{
+    max-width: 78%;
+  }
+
+  .app-footer{
+    padding: 12px 32px;
+  }
+
+  .fake-input{
+    max-width: 100%;
+  }
+}
+
+/* Header — flat Ore UI title bar */
+.app-header{
+  background: var(--mc-panel);
+  border-bottom: 1px solid var(--mc-border-hi);
+  color: var(--wa-text-dark);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+@keyframes avatarBob{
+  0%, 100%{ transform: translateY(0) rotate(0deg); }
+  50%{ transform: translateY(-2px) rotate(-4deg); }
+}
+
+.avatar{
+  width: 42px;
+  height: 42px;
+  border-radius: var(--ore-radius-sm);
+  background: var(--mc-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 2px 0 var(--mc-green-dark);
+  animation: avatarBob 2.8s ease-in-out infinite;
+}
+
+.header-info h1{
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  line-height: 1.3;
+  color: var(--wa-text-dark);
+}
+
+.status-text{
+  font-size: 12px;
+  color: var(--mc-green-hi);
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.changelog-btn{
+  background: var(--mc-panel-alt);
+  border: none;
+  color: white;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ore-radius-sm);
+  font-size: 15px;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.1s ease;
+  flex-shrink: 0;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+}
+
+#musicBtn,
+.app-header .changelog-btn{
+  margin-left: auto;
+}
+
+.changelog-btn:hover{
+  filter: brightness(1.2);
+}
+
+.changelog-btn:active{
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+
+a.changelog-btn{
+  text-decoration: none;
+}
+
+/* Chat area — flat dark slate backdrop (no grunge texture) */
+.chat-area{
+  flex: 1;
+  padding: 16px 12px 100px 12px;
+  background: var(--mc-bg-accent);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+
+/* Themed dark scrollbar */
+html{ color-scheme: dark; }
+.chat-area{
+  scrollbar-width: thin;
+  scrollbar-color: #4a505c #1b1e25;
+}
+.chat-area::-webkit-scrollbar{ width: 8px; }
+.chat-area::-webkit-scrollbar-track{ background: transparent; }
+.chat-area::-webkit-scrollbar-thumb{
+  background: #4a505c;
+  border-radius: 8px;
+}
+.chat-area::-webkit-scrollbar-thumb:hover{ background: #74d956; }
+
+/* ===== Animated stepper: Upload > Process > Download ===== */
+@keyframes stepPulse{
+  0%, 100%{ box-shadow: 0 0 0 0 rgba(116,217,86,0.55); }
+  50%{ box-shadow: 0 0 0 7px rgba(116,217,86,0); }
+}
+
+@keyframes stepPop{
+  0%{ transform: scale(0.3); opacity: 0; }
+  60%{ transform: scale(1.25); opacity: 1; }
+  100%{ transform: scale(1); }
+}
+
+@keyframes spinGear{
+  from{ transform: rotate(0deg); }
+  to{ transform: rotate(360deg); }
+}
+
+.stepper{
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin: 2px auto 18px auto;
+  max-width: 100%;
+  padding: 10px 4px 2px 4px;
+}
+
+.step{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  width: 78px;
+}
+
+.step-circle{
+  width: 42px;
+  height: 42px;
+  border-radius: var(--ore-radius-sm);
+  background: var(--mc-slot);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background 0.35s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.35);
+}
+
+.step-icon{
+  filter: grayscale(0.6) brightness(0.9);
+  display: inline-block;
+}
+
+.step-icon.spin,
+.step.active .step-circle .step-icon{
+  animation: spinGear 1.4s linear infinite;
+  filter: none;
+}
+
+.step.active .step-circle{
+  background: var(--mc-green);
+  animation: stepPulse 1.6s ease-in-out infinite;
+  box-shadow: 0 2px 0 var(--mc-green-dark);
+  transform: scale(1.06);
+}
+
+.step.done .step-circle{
+  background: var(--mc-green-hi);
+  box-shadow: 0 2px 0 var(--mc-emerald-dark);
+}
+
+.step-check{
+  color: #fff;
+  font-weight: 900;
+  font-size: 19px;
+}
+
+.step-check.pop{
+  animation: stepPop 0.45s cubic-bezier(.34,1.56,.64,1);
+}
+
+.step-label{
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--wa-text-muted);
+  text-align: center;
+  transition: color 0.25s ease;
+}
+
+.step.active .step-label{
+  color: var(--mc-green-hi);
+}
+
+.step.done .step-label{
+  color: var(--mc-gold);
+}
+
+.step-line{
+  flex: 0 0 auto;
+  width: 36px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  margin: 0 -2px;
+}
+
+.step-line span{
+  display: block;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--mc-slot);
+  position: relative;
+  overflow: hidden;
+}
+
+.step-line span::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--mc-green-hi);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s ease;
+}
+
+.step-line.filled span::after{
+  transform: scaleX(1);
+}
+
+@media (max-width: 420px){
+  .step{ width: 64px; }
+  .step-circle{ width: 36px; height: 36px; font-size: 15px; }
+  .step-label{ font-size: 9px; }
+  .step-line{ width: 22px; height: 36px; }
+}
+
+.date-chip{
+  font-family: 'Nunito', sans-serif;
+  text-align: center;
+  background: var(--mc-panel);
+  color: var(--mc-gold);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  width: fit-content;
+  margin: 0 auto 16px auto;
+  box-shadow: 0 0 0 1px var(--mc-border-hi);
+}
+
+@keyframes bubbleIn{
+  from{ opacity: 0; transform: translateY(14px) scale(0.98); }
+  to{ opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bubble{
+  background: var(--mc-wood);
+  border: 1px solid var(--mc-border-hi);
+  border-radius: var(--ore-radius-lg);
+  padding: 12px 14px 20px 14px;
+  margin-bottom: 12px;
+  max-width: 88%;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--mc-wood-text);
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  animation: bubbleIn 0.4s ease both;
+}
+
+.bubble b{ color: var(--mc-gold); }
+
+.bubble-left{
+  margin-right: auto;
+}
+
+.bubble p code{
+  background: rgba(0,0,0,0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 700;
+  color: var(--mc-green-hi);
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.4;
+  vertical-align: top;
+}
+
+.bubble .time{
+  position: absolute;
+  bottom: 6px;
+  right: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.35);
+}
+
+.bubble.warn{
+  background: var(--mc-red);
+  border-color: rgba(255,255,255,0.12);
+  color: #fff3f1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+.bubble.warn b{ color: #ffffff; }
+
+/* Upload card */
+.upload-card{
+  max-width: 100%;
+  background: var(--mc-panel-alt);
+  color: var(--wa-text-dark);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.upload-card b{ color: #fff; }
+
+@keyframes floatIcon{
+  0%, 100%{ transform: translateY(0); }
+  50%{ transform: translateY(-5px); }
+}
+
+@keyframes fileSelectedPop{
+  0%{ transform: scale(0.85); opacity: 0; }
+  100%{ transform: scale(1); opacity: 1; }
+}
+
+.dropzone{
+  border: 2px dashed var(--mc-green-hi);
+  border-radius: var(--ore-radius-md);
+  padding: 26px 12px;
+  text-align: center;
+  margin: 10px 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.15s ease;
+  background: rgba(76,175,50,0.08);
+}
+
+.dropzone:hover{
+  transform: translateY(-1px);
+  border-color: var(--mc-gold);
+}
+
+.dropzone.dragover{
+  background: rgba(76,175,50,0.22);
+  border-color: var(--mc-gold);
+  transform: scale(1.015);
+}
+
+.drop-icon{
+  font-size: 32px;
+  margin-bottom: 6px;
+  display: inline-block;
+  animation: floatIcon 2.4s ease-in-out infinite;
+}
+
+.file-selected{
+  display: inline-block;
+  color: var(--mc-green-hi);
+  font-weight: 800;
+  animation: fileSelectedPop 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+
+.dropzone p{
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--wa-text-muted);
+}
+
+.checkbox-row{
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--wa-text-muted);
+  margin: 10px 0 14px 0;
+  cursor: pointer;
+}
+
+.checkbox-row input{
+  margin-top: 3px;
+  accent-color: var(--mc-green);
+}
+
+.info-fix-list{
+  background: var(--mc-panel);
+  border-radius: var(--ore-radius-md);
+  padding: 10px 12px;
+  margin: 10px 0 14px 0;
+  box-shadow: 0 0 0 1px var(--mc-border-hi);
+}
+
+.info-fix-list ul{
+  list-style: disc;
+}
+
+.info-fix-list code{
+  background: rgba(255,255,255,0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: var(--mc-gold);
+}
+
+/* Rename world */
+.rename-section{
+  background: var(--mc-panel);
+  border-radius: var(--ore-radius-md);
+  padding: 10px 12px;
+  margin: 0 0 14px 0;
+  box-shadow: 0 0 0 1px var(--mc-border-hi);
+}
+
+.rename-section .toggle-row{
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+.rename-section .toggle-label code{
+  background: rgba(255,255,255,0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: var(--mc-gold);
+}
+
+.current-name-hint{
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--mc-green-hi);
+  opacity: 0.9;
+}
+
+@keyframes renameInputIn{
+  from{ opacity: 0; transform: translateY(-6px); max-height: 0; }
+  to{ opacity: 1; transform: translateY(0); max-height: 60px; }
+}
+
+.rename-input{
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--ore-radius-sm);
+  border: 2px solid var(--mc-green-hi);
+  background: var(--mc-bg);
+  color: var(--wa-text-dark);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  animation: renameInputIn 0.25s ease both;
+}
+
+.rename-input:focus{
+  border-color: var(--mc-gold);
+  box-shadow: 0 0 0 3px rgba(255,216,77,0.25);
+}
+
+.rename-hint{
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--wa-text-muted);
+  opacity: 0.8;
+}
+
+/* Toggle rows — flat Ore UI list rows */
+.toggle-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--mc-border-hi);
+  cursor: pointer;
+  border-radius: var(--ore-radius-sm);
+  transition: background 0.15s ease;
+}
+
+.toggle-row:hover{
+  background: rgba(255,255,255,0.05);
+}
+
+/* "Achievement Active" master switch — stands out above the individual fixes */
+.master-toggle-row{
+  background: rgba(255,216,77,0.1);
+  box-shadow: 0 0 0 1px rgba(255,216,77,0.4);
+  border-bottom: none;
+  border-radius: var(--ore-radius-md);
+  padding: 10px 10px;
+  margin-bottom: 10px;
+}
+
+.master-toggle-row:hover{
+  background: rgba(255,216,77,0.16);
+}
+
+.master-toggle-label{
+  font-size: 13.5px;
+  color: var(--mc-gold);
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.master-toggle-label b{
+  color: var(--mc-gold);
+}
+
+.master-toggle-hint{
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--wa-text-muted);
+  opacity: 0.85;
+}
+
+/* "Customize individual fixes" collapse toggle */
+.advanced-toggle-btn{
+  display: block;
+  width: 100%;
+  background: var(--mc-slot);
+  border: none;
+  color: var(--wa-text-muted);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  padding: 9px 10px;
+  border-radius: var(--ore-radius-sm);
+  cursor: pointer;
+  touch-action: manipulation;
+  text-align: center;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.advanced-toggle-btn:hover{
+  background: var(--mc-panel-alt);
+  color: var(--wa-text-dark);
+}
+
+.advanced-toggle-btn:active{
+  transform: translateY(2px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.3);
+}
+
+@keyframes advancedFadeIn{
+  from{ opacity: 0; transform: translateY(-6px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+.advanced-toggles{
+  margin-top: 4px;
+  animation: advancedFadeIn 0.25s ease both;
+}
+
+.toggle-row:last-child{
+  border-bottom: none;
+}
+
+.toggle-label{
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--wa-text-muted);
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.toggle-row .toggle-label code{
+  background: rgba(255,255,255,0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: var(--mc-gold);
+}
+
+/* Switch — flat Ore UI pill toggle */
+.switch{
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input{
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .slider{
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--mc-slot);
+  transition: background-color 0.2s ease;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3);
+}
+
+.switch .slider::before{
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: #eef1f5;
+  transition: transform 0.2s ease;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.switch input:checked + .slider{
+  background: var(--mc-green);
+}
+
+.switch input:checked + .slider::before{
+  transform: translateX(20px);
+}
+
+.switch input:disabled + .slider{
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Main CTA button — chunky flat Ore UI button with a pressable bottom ridge */
+.btn-main{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Nunito', sans-serif;
+  background: var(--mc-green);
+  color: #ffffff;
+  border: none;
+  padding: 14px 12px;
+  border-radius: var(--ore-radius-md);
+  font-size: 13.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: 0 4px 0 var(--mc-green-dark), 0 6px 10px rgba(0,0,0,0.3);
+}
+
+.btn-main:disabled{
+  background: var(--mc-slot);
+  box-shadow: 0 4px 0 #1b1e23;
+  cursor: not-allowed;
+}
+
+.btn-main:not(:disabled):hover{
+  filter: brightness(1.1);
+}
+
+.btn-main:not(:disabled):active{
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--mc-green-dark), 0 2px 4px rgba(0,0,0,0.3);
+}
+
+@keyframes btnSpin{
+  to{ transform: rotate(360deg); }
+}
+
+.btn-spinner{
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  animation: btnSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Result bubbles */
+.result-bubble{
+  background: var(--mc-emerald);
+  border: 1px solid rgba(255,255,255,0.1);
+  margin-left: auto;
+  border-radius: var(--ore-radius-lg);
+  max-width: 88%;
+  color: #eafff2;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.result-bubble b{ color: #ffffff; }
+
+.result-bubble .time{
+  color: rgba(255,255,255,0.55);
+}
+
+.result-bubble code{
+  background: rgba(0,0,0,0.28);
+  color: var(--mc-gold);
+}
+
+.result-bubble.error{
+  background: var(--mc-red);
+  color: #ffece9;
+}
+
+@keyframes successBounce{
+  0%{ transform: scale(0.4) rotate(-15deg); opacity: 0; }
+  55%{ transform: scale(1.3) rotate(8deg); opacity: 1; }
+  75%{ transform: scale(0.92) rotate(-4deg); }
+  100%{ transform: scale(1) rotate(0); }
+}
+
+.success-icon{
+  display: inline-block;
+  animation: successBounce 0.6s cubic-bezier(.34,1.56,.64,1);
+}
+
+.success-banner{
+  font-size: 15.5px;
+}
+
+@keyframes glowPulse{
+  0%, 100%{ box-shadow: 0 4px 0 var(--mc-gold-dark), 0 6px 10px rgba(0,0,0,0.3), 0 0 0 0 rgba(255,216,77,0.5); }
+  50%{ box-shadow: 0 4px 0 var(--mc-gold-dark), 0 6px 10px rgba(0,0,0,0.3), 0 0 14px 4px rgba(255,216,77,0.55); }
+}
+
+.download-btn{
+  display: inline-block;
+  font-family: 'Nunito', sans-serif;
+  margin-top: 12px;
+  background: var(--mc-gold);
+  color: var(--mc-gold-text);
+  text-decoration: none;
+  padding: 13px 18px;
+  border-radius: var(--ore-radius-md);
+  font-weight: 900;
+  font-size: 12.5px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  touch-action: manipulation;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.1s ease;
+  box-shadow: 0 4px 0 var(--mc-gold-dark), 0 6px 10px rgba(0,0,0,0.3);
+}
+
+.download-btn.glow-pulse{
+  animation: glowPulse 1.8s ease-in-out infinite;
+}
+
+.download-btn:hover{
+  filter: brightness(1.08);
+}
+
+.download-btn:active{
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--mc-gold-dark), 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* ===== Tidy success result layout ===== */
+
+.success-summary{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 10px 0;
+}
+
+.summary-chip{
+  display: inline-block;
+  background: rgba(0,0,0,0.28);
+  color: #eafff2;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+  white-space: nowrap;
+}
+
+.result-section{
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--ore-radius-md);
+  margin-bottom: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.result-section-summary{
+  list-style: none;
+  cursor: pointer;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #eafff2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.result-section-summary::-webkit-details-marker{
+  display: none;
+}
+
+.result-section-summary::after{
+  content: "▾";
+  font-size: 11px;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+  margin-left: 8px;
+}
+
+.result-section:not([open]) .result-section-summary::after{
+  transform: rotate(-90deg);
+}
+
+.result-section-summary:hover{
+  background: rgba(255,255,255,0.05);
+}
+
+.result-section-body{
+  padding: 2px 12px 8px 12px;
+}
+
+.result-item-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 12.5px;
+}
+
+.result-item-row:last-child{
+  border-bottom: none;
+}
+
+.result-item-row.muted{
+  opacity: 0.6;
+}
+
+.result-item-name{
+  background: rgba(0,0,0,0.3);
+  color: var(--mc-gold);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+}
+
+.result-item-value{
+  flex-shrink: 0;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.result-item-value.muted{
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+}
+
+.result-note{
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  padding: 4px 0;
+}
+
+.result-callout{
+  margin-top: 8px;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: var(--ore-radius-sm);
+  line-height: 1.4;
+}
+
+.result-callout.success{
+  background: rgba(76,175,50,0.14);
+  color: var(--wa-teal-green);
+  box-shadow: inset 0 0 0 1px rgba(76,175,50,0.3);
+}
+
+.result-callout.warn{
+  background: rgba(226,72,60,0.18);
+  color: var(--wa-danger-text);
+  box-shadow: inset 0 0 0 1px rgba(226,72,60,0.35);
+}
+
+.result-callout.info{
+  background: rgba(255,216,77,0.14);
+  color: #ffe9a8;
+  box-shadow: inset 0 0 0 1px rgba(255,216,77,0.35);
+}
+
+.howto-text{
+  margin-top: 8px;
+}
+
+/* Edit output file / folder name (inside the success result) */
+.output-name-edit{
+  margin-top: 10px;
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--ore-radius-md);
+  padding: 10px 12px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.output-name-label{
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #eafff2;
+  margin-bottom: 6px;
+}
+
+.output-name-row{
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.output-name-input{
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 9px 10px;
+  border: 2px solid var(--mc-gold);
+  border-right: none;
+  border-radius: var(--ore-radius-sm) 0 0 var(--ore-radius-sm);
+  background: var(--mc-bg);
+  color: var(--wa-text-dark);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  outline: none;
+}
+
+.output-name-input:focus{
+  background: #1d2127;
+}
+
+.output-name-ext{
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  background: var(--mc-gold);
+  color: var(--mc-gold-text);
+  font-weight: 800;
+  font-size: 12.5px;
+  border-radius: 0 var(--ore-radius-sm) var(--ore-radius-sm) 0;
+}
+
+.output-name-hint{
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Footer */
+.app-footer{
+  position: sticky;
+  bottom: 0;
+  background: var(--mc-panel);
+  padding: 10px 14px;
+  border-top: 1px solid var(--mc-border-hi);
+}
+
+.fake-input{
+  background: var(--mc-panel-alt);
+  color: var(--wa-text-muted);
+  border-radius: var(--ore-radius-sm);
+  padding: 11px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px var(--mc-border-hi);
+}
+
+.credit-footer{
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6c7684;
+  margin-top: 8px;
+  letter-spacing: 0.2px;
+}
+
+@media (max-width: 768px){
+  body{
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .app{
+    max-width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .app-header{
+    padding: env(safe-area-inset-top, 10px) 12px 10px 12px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  }
+
+  .chat-area{
+    padding: 12px 8px 100px 8px;
+  }
+
+  .bubble{
+    max-width: 94%;
+    font-size: 14px;
+    padding: 10px 12px 18px 12px;
+  }
+
+  .bubble p code{
+    font-size: 11.5px;
+  }
+
+  .header-info h1{
+    font-size: 13px;
+  }
+
+  .app-footer{
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  }
+}
+
+</style>
 </head>
 <body>
 
@@ -305,6 +1522,756 @@
 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="script.js"></script>
+<script>
+/* =========================================================
+   MC Achievement Fixer (Vue 3)
+   Upload an entire Minecraft Bedrock world file (.mcworld).
+   An .mcworld is actually a ZIP file containing level.dat, db/,
+   world_behavior_packs.json, etc. This tool:
+   1) Opens that zip (using JSZip)
+   2) Zeroes out NBT byte flags in level.dat: hasBeenLoadedInCreative,
+      cheatsEnabled, commandsEnabled, experiments_ever_used,
+      saved_with_toggled_experiments
+   3) Clears world_behavior_packs.json & world_resource_packs.json
+      (removes add-ons that lock achievements)
+   4) Repackages everything into a new .mcworld for download
+
+   Everything runs 100% in the browser (client-side),
+   no data is sent to any server.
+
+   The UI is rendered with Vue 3 (reactive state), while all the
+   NBT parsing logic stays as pure functions outside the Vue instance.
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   Find any file entry by its exact name (case-insensitive),
+   either at the root or nested inside the zip.
+--------------------------------------------------------- */
+function findEntryByName(zip, fileName) {
+  let candidate = null;
+  const lowerTarget = fileName.toLowerCase();
+  zip.forEach((relativePath, entry) => {
+    if (entry.dir) return;
+    const lower = relativePath.toLowerCase();
+    if (lower === lowerTarget || lower.endsWith('/' + lowerTarget)) {
+      candidate = entry;
+    }
+  });
+  return candidate;
+}
+
+/* ---------------------------------------------------------
+   Find the "level.dat" entry inside the zip (root or nested,
+   while avoiding "level.dat_old")
+--------------------------------------------------------- */
+function findLevelDatEntry(zip) {
+  let candidate = null;
+  zip.forEach((relativePath, entry) => {
+    if (entry.dir) return;
+    const lower = relativePath.toLowerCase();
+    if (lower.endsWith('/level.dat') || lower === 'level.dat') {
+      candidate = entry;
+    }
+  });
+  return candidate;
+}
+
+/* ---------------------------------------------------------
+   Generic NBT payload skipper based on tag type (used to jump
+   over tags that aren't TAG_Byte inside the "experiments"
+   compound, just in case the structure changes in future game
+   versions). Returns: offset after the payload.
+--------------------------------------------------------- */
+function skipNbtPayload(bytes, offset, type) {
+  switch (type) {
+    case 1: return offset + 1;                     // Byte
+    case 2: return offset + 2;                      // Short
+    case 3: return offset + 4;                      // Int
+    case 4: return offset + 8;                      // Long
+    case 5: return offset + 4;                      // Float
+    case 6: return offset + 8;                      // Double
+    case 7: {                                        // Byte Array
+      const len = readInt32LE(bytes, offset);
+      return offset + 4 + len;
+    }
+    case 8: {                                        // String
+      const len = bytes[offset] | (bytes[offset + 1] << 8);
+      return offset + 2 + len;
+    }
+    case 9: {                                        // List
+      const elemType = bytes[offset];
+      const count = readInt32LE(bytes, offset + 1);
+      let pos = offset + 5;
+      for (let k = 0; k < count; k++) pos = skipNbtPayload(bytes, pos, elemType);
+      return pos;
+    }
+    case 10: {                                       // Compound
+      let pos = offset;
+      while (bytes[pos] !== 0x00) {
+        const childType = bytes[pos];
+        const nameLen = bytes[pos + 1] | (bytes[pos + 2] << 8);
+        const payloadStart = pos + 3 + nameLen;
+        pos = skipNbtPayload(bytes, payloadStart, childType);
+      }
+      return pos + 1; // skip TAG_End
+    }
+    case 11: {                                       // Int Array
+      const len = readInt32LE(bytes, offset);
+      return offset + 4 + len * 4;
+    }
+    case 12: {                                       // Long Array
+      const len = readInt32LE(bytes, offset);
+      return offset + 4 + len * 8;
+    }
+    default: return offset + 1; // fallback, should never happen
+  }
+}
+
+function readInt32LE(bytes, offset) {
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
+}
+
+/* ---------------------------------------------------------
+   Find the TAG_Compound named "experiments", then disable (set
+   to 0) EVERY TAG_Byte found directly inside it — whatever its
+   name. This handles any active experimental toggle, including
+   ones not in any manual list.
+--------------------------------------------------------- */
+function disableAllExperiments(bytes) {
+  const nameBytes = new TextEncoder().encode('experiments');
+  const nameLen = nameBytes.length;
+  const disabled = [];
+
+  for (let i = 0; i < bytes.length - (3 + nameLen); i++) {
+    if (bytes[i] !== 0x0a) continue; // TAG_Compound
+    const len = bytes[i + 1] | (bytes[i + 2] << 8);
+    if (len !== nameLen) continue;
+    let match = true;
+    for (let j = 0; j < nameLen; j++) {
+      if (bytes[i + 3 + j] !== nameBytes[j]) { match = false; break; }
+    }
+    if (!match) continue;
+
+    // Found the "experiments" compound. Walk through it.
+    let pos = i + 3 + nameLen;
+    while (bytes[pos] !== 0x00) {
+      const childType = bytes[pos];
+      const childNameLen = bytes[pos + 1] | (bytes[pos + 2] << 8);
+      const childName = new TextDecoder().decode(bytes.slice(pos + 3, pos + 3 + childNameLen));
+      const payloadStart = pos + 3 + childNameLen;
+
+      if (childType === 0x01) { // TAG_Byte -> this is an experiment toggle
+        const before = bytes[payloadStart];
+        if (before !== 0) {
+          bytes[payloadStart] = 0;
+          disabled.push({ name: childName, before });
+        }
+        pos = payloadStart + 1;
+      } else {
+        pos = skipNbtPayload(bytes, payloadStart, childType);
+      }
+    }
+
+    return { found: true, disabled }; // only process the first matching compound
+  }
+
+  return { found: false, disabled: [] };
+}
+
+/* ---------------------------------------------------------
+   Same as setNamedByteTag, but for TAG_Int (type 0x03),
+   a 4-byte little-endian payload. Used for tags like GameType.
+--------------------------------------------------------- */
+function setNamedIntTag(bytes, tagName, newValue) {
+  const nameBytes = new TextEncoder().encode(tagName);
+  const nameLen = nameBytes.length;
+
+  for (let i = 0; i < bytes.length - (3 + nameLen + 4); i++) {
+    if (bytes[i] !== 0x03) continue; // TAG_Int
+
+    const len = bytes[i + 1] | (bytes[i + 2] << 8);
+    if (len !== nameLen) continue;
+
+    let match = true;
+    for (let j = 0; j < nameLen; j++) {
+      if (bytes[i + 3 + j] !== nameBytes[j]) { match = false; break; }
+    }
+    if (!match) continue;
+
+    const payloadIndex = i + 3 + nameLen;
+    const before = (bytes[payloadIndex]) | (bytes[payloadIndex+1] << 8) | (bytes[payloadIndex+2] << 16) | (bytes[payloadIndex+3] << 24);
+    bytes[payloadIndex]     = newValue & 0xff;
+    bytes[payloadIndex + 1] = (newValue >> 8) & 0xff;
+    bytes[payloadIndex + 2] = (newValue >> 16) & 0xff;
+    bytes[payloadIndex + 3] = (newValue >> 24) & 0xff;
+    return { found: true, before, index: payloadIndex };
+  }
+
+  return { found: false, before: null, index: -1 };
+}
+
+/* ---------------------------------------------------------
+   Finds an NBT tag of type TAG_Byte with a given name, then
+   changes its payload value (in-place in the buffer).
+   Tag format: [type=0x01][nameLen:int16 LE][name bytes][value:1 byte]
+--------------------------------------------------------- */
+function setNamedByteTag(bytes, tagName, newValue) {
+  const nameBytes = new TextEncoder().encode(tagName);
+  const nameLen = nameBytes.length;
+
+  for (let i = 0; i < bytes.length - (3 + nameLen); i++) {
+    if (bytes[i] !== 0x01) continue;
+
+    const len = bytes[i + 1] | (bytes[i + 2] << 8);
+    if (len !== nameLen) continue;
+
+    let match = true;
+    for (let j = 0; j < nameLen; j++) {
+      if (bytes[i + 3 + j] !== nameBytes[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (!match) continue;
+
+    const payloadIndex = i + 3 + nameLen;
+    const before = bytes[payloadIndex];
+    bytes[payloadIndex] = newValue;
+    return { found: true, before, index: payloadIndex };
+  }
+
+  return { found: false, before: null, index: -1 };
+}
+
+/* ---------------------------------------------------------
+   Find a TAG_String with a given name (e.g. "LevelName") and
+   return its position + current value. Doesn't change anything —
+   used to preview the world name before processing, and by
+   setNamedStringTag below to actually perform the change.
+   Tag format: [type=0x08][nameLen:int16 LE][name bytes][strLen:int16 LE][str bytes]
+--------------------------------------------------------- */
+function findNamedStringTag(bytes, tagName) {
+  const nameBytes = new TextEncoder().encode(tagName);
+  const nameLen = nameBytes.length;
+
+  for (let i = 0; i < bytes.length - (3 + nameLen + 2); i++) {
+    if (bytes[i] !== 0x08) continue; // TAG_String
+
+    const len = bytes[i + 1] | (bytes[i + 2] << 8);
+    if (len !== nameLen) continue;
+
+    let match = true;
+    for (let j = 0; j < nameLen; j++) {
+      if (bytes[i + 3 + j] !== nameBytes[j]) { match = false; break; }
+    }
+    if (!match) continue;
+
+    const payloadIndex = i + 3 + nameLen;
+    const strLen = bytes[payloadIndex] | (bytes[payloadIndex + 1] << 8);
+    const strStart = payloadIndex + 2;
+    const value = new TextDecoder('utf-8').decode(bytes.slice(strStart, strStart + strLen));
+
+    return { found: true, value, payloadIndex, strStart, strLen };
+  }
+
+  return { found: false, value: null };
+}
+
+/* ---------------------------------------------------------
+   Changes the value of a TAG_String (e.g. "LevelName") to a new
+   name. The new string's length is usually different from the
+   old one, so it can't be changed in-place like byte/int tags —
+   a new buffer is rebuilt instead (the slice before the tag +
+   new length + new name + the slice after the tag). Returns a
+   NEW buffer (the old bytes are no longer valid after this).
+--------------------------------------------------------- */
+function setNamedStringTag(bytes, tagName, newValue) {
+  const found = findNamedStringTag(bytes, tagName);
+  if (!found.found) {
+    return { found: false, before: null, bytes };
+  }
+
+  const newValueBytes = new TextEncoder().encode(newValue);
+  const newLen = newValueBytes.length;
+
+  const head = bytes.slice(0, found.payloadIndex);
+  const tail = bytes.slice(found.strStart + found.strLen);
+
+  const newBytes = new Uint8Array(head.length + 2 + newLen + tail.length);
+  newBytes.set(head, 0);
+  newBytes[head.length] = newLen & 0xff;
+  newBytes[head.length + 1] = (newLen >> 8) & 0xff;
+  newBytes.set(newValueBytes, head.length + 2);
+  newBytes.set(tail, head.length + 2 + newLen);
+
+  return { found: true, before: found.value, bytes: newBytes };
+}
+
+/* ---------------------------------------------------------
+   The level.dat header (first 8 bytes) stores: [version:int32 LE]
+   [length of the NBT payload that follows:int32 LE]. If the
+   buffer's length changes (e.g. because the world name changed),
+   this number must be updated so the game can still read the
+   whole file correctly.
+--------------------------------------------------------- */
+function fixLevelDatHeaderLength(bytes) {
+  const payloadLen = bytes.length - 8;
+  bytes[4] = payloadLen & 0xff;
+  bytes[5] = (payloadLen >> 8) & 0xff;
+  bytes[6] = (payloadLen >> 16) & 0xff;
+  bytes[7] = (payloadLen >> 24) & 0xff;
+  return bytes;
+}
+
+function suggestOutputName(originalName) {
+  const base = originalName.replace(/\.(mcworld|zip)$/i, '');
+  return `${base}_fixed.mcworld`;
+}
+
+function gameTypeLabel(val) {
+  const map = { 0: 'Survival', 1: 'Creative', 2: 'Adventure', 3: 'Spectator' };
+  return map[val] !== undefined ? `${map[val]} (${val})` : val;
+}
+
+function nowTime() {
+  const d = new Date();
+  return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+}
+
+let resultIdCounter = 0;
+
+/* Toggle keys controlled by the "Achievement Active" master switch.
+   renameWorld is intentionally excluded — it's a separate feature
+   (renaming the world), not an achievement fix. */
+const ACHIEVEMENT_TOGGLE_KEYS = [
+  'hasBeenLoadedInCreative',
+  'cheatsEnabled',
+  'commandsEnabled',
+  'gameType',
+  'experiments',
+  'education',
+  'hardcore',
+  'packs'
+];
+
+/* ---------------------------------------------------------
+   Vue app
+--------------------------------------------------------- */
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      isDragover: false,
+      selectedFile: null,
+      processing: false,
+
+      toggles: {
+        hasBeenLoadedInCreative: true,
+        cheatsEnabled: true,
+        commandsEnabled: true,
+        gameType: true,
+        experiments: true,
+        education: true,
+        hardcore: true,
+        packs: true,
+        renameWorld: false
+      },
+
+      showAdvanced: false,
+
+      currentWorldName: '',
+      newWorldName: '',
+      nameCheckPending: false,
+
+      results: []
+    };
+  },
+
+  computed: {
+    /* 1 = not processed yet (including error/notfound, needs a
+       fresh upload), 2 = currently processing, 3 = success & ready
+       to download */
+    currentStep() {
+      if (this.processing) return 2;
+      if (this.results.length) {
+        const last = this.results[this.results.length - 1];
+        if (last.kind === 'success') return 3;
+      }
+      return 1;
+    },
+
+    /* "Achievement Active" master switch. Reading it reflects whether
+       every achievement-fix toggle below is currently on (renameWorld
+       is a separate feature and isn't included); setting it flips all
+       of them on or off at once for a quicker, more flexible workflow. */
+    masterToggle: {
+      get() {
+        return ACHIEVEMENT_TOGGLE_KEYS.every(key => this.toggles[key]);
+      },
+      set(value) {
+        ACHIEVEMENT_TOGGLE_KEYS.forEach(key => {
+          this.toggles[key] = value;
+        });
+      }
+    }
+  },
+
+  methods: {
+    /* ---------- Feedback: open Gmail ---------- */
+    openFeedback() {
+      const email = 'fmuhammadgarda@gmail.com';
+      const subject = 'Feedback MC Achievement Fixer';
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      // Desktop: still open Gmail's web version in a new tab as before
+      if (!isMobile) {
+        window.open(
+          `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}`,
+          '_blank'
+        );
+        return;
+      }
+
+      // Mobile: try to open the Gmail app directly (not a browser tab)
+      // via Gmail's official custom URL scheme. The subject is already
+      // pre-filled with "Feedback MC Achievement Fixer" as a label for
+      // this email.
+      const gmailAppUrl = `googlegmail://co?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}`;
+      const mailtoFallback = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
+
+      let appOpened = false;
+      const onHide = () => { appOpened = true; };
+      document.addEventListener('visibilitychange', onHide, { once: true });
+
+      window.location.href = gmailAppUrl;
+
+      // If the page is still visible after a short delay (the Gmail
+      // app isn't installed / failed to open), fall back to a regular
+      // mailto: link so it can still be sent via the device's default
+      // mail app.
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', onHide);
+        if (!appOpened) {
+          window.location.href = mailtoFallback;
+        }
+      }, 1200);
+    },
+
+    /* ---------- UI: pick a file ---------- */
+    triggerFileInput() {
+      this.$refs.fileInput.click();
+    },
+
+    onFileChange(e) {
+      if (e.target.files.length > 0) {
+        this.selectedFile = e.target.files[0];
+        this.peekWorldName();
+      }
+    },
+
+    onDrop(e) {
+      this.isDragover = false;
+      if (e.dataTransfer.files.length > 0) {
+        this.selectedFile = e.dataTransfer.files[0];
+        this.peekWorldName();
+      }
+    },
+
+    /* ---------- Peek the current world name (read-only, doesn't change the file) ---------- */
+    async peekWorldName() {
+      this.currentWorldName = '';
+      this.newWorldName = '';
+      if (!this.selectedFile) return;
+
+      this.nameCheckPending = true;
+      try {
+        const buf = await this.selectedFile.arrayBuffer();
+        const zip = await JSZip.loadAsync(buf);
+        const levelDatEntry = findLevelDatEntry(zip);
+        if (!levelDatEntry) return;
+
+        const bytes = await levelDatEntry.async('uint8array');
+        const found = findNamedStringTag(bytes, 'LevelName');
+        if (found.found) {
+          this.currentWorldName = found.value;
+          this.newWorldName = found.value;
+        }
+      } catch (e) {
+        // A failed name peek just means the preview won't show;
+        // the main processing step can still run afterward.
+      } finally {
+        this.nameCheckPending = false;
+      }
+    },
+
+    /* ---------- Main processing ---------- */
+    async processWorld() {
+      if (!this.selectedFile || this.processing) return;
+
+      this.processing = true;
+
+      try {
+        const toggles = this.toggles;
+        const arrayBuffer = await this.selectedFile.arrayBuffer();
+
+        // Open the .mcworld as a zip archive
+        const zip = await JSZip.loadAsync(arrayBuffer);
+
+        // Find the level.dat entry (usually at the root, but also search nested)
+        const levelDatEntry = findLevelDatEntry(zip);
+
+        if (!levelDatEntry) {
+          this.pushError('The level.dat file was not found inside this world. Make sure the uploaded file is a valid .mcworld / a zip of a valid world folder (not an empty zip or the wrong folder).');
+          return;
+        }
+
+        const levelDatBytes = await levelDatEntry.async('uint8array');
+
+        const report = [];
+
+        // === PART 1: Byte flags in level.dat ===
+        // - hasBeenLoadedInCreative -> world was ever opened in Creative mode
+        // - cheatsEnabled / commandsEnabled -> "Allow Cheats" was ever ON
+        // - experiments_ever_used / saved_with_toggled_experiments -> any
+        //   Experimental Gameplay toggle was ever enabled (this flag appears
+        //   automatically as soon as an experiment has been turned on even
+        //   once). Both flags are grouped with the "experiments" toggle in
+        //   the UI since they're both about Experimental Gameplay history.
+        const tagsToFix = [
+          'hasBeenLoadedInCreative',
+          'cheatsEnabled',
+          'commandsEnabled'
+        ].filter(tagName => toggles[tagName]);
+
+        if (toggles.experiments) {
+          tagsToFix.push('experiments_ever_used', 'saved_with_toggled_experiments');
+        }
+
+        if (toggles.education) {
+          tagsToFix.push('educationFeaturesEnabled');
+        }
+
+        tagsToFix.forEach(tagName => {
+          const result = setNamedByteTag(levelDatBytes, tagName, 0);
+          report.push({
+            type: 'flag',
+            name: tagName,
+            found: result.found,
+            before: result.before,
+            after: result.found ? 0 : null
+          });
+        });
+
+        // IsHardcore -> the world was ever/still set to Hardcore. This mode
+        // permanently locks difficulty to Hard & disables respawn (dying =
+        // game over), which according to some player reports also prevents
+        // achievements from being earned. Forced to 0 (non-hardcore).
+        if (toggles.hardcore) {
+          const hardcoreResult = setNamedByteTag(levelDatBytes, 'IsHardcore', 0);
+          report.push({
+            type: 'flag',
+            name: 'IsHardcore (Hardcore Mode disabled)',
+            found: hardcoreResult.found,
+            before: hardcoreResult.before,
+            after: hardcoreResult.found ? 0 : null
+          });
+        }
+
+        // GameType (TAG_Int) -> 0 (Survival). If the world is still set to
+        // Creative by default, achievements won't unlock even if every
+        // history flag above is already 0.
+        if (toggles.gameType) {
+          const gameTypeResult = setNamedIntTag(levelDatBytes, 'GameType', 0);
+          report.push({
+            type: 'flag',
+            name: 'GameType (mode forced to Survival)',
+            found: gameTypeResult.found,
+            before: gameTypeResult.found ? gameTypeResult.before : null,
+            after: gameTypeResult.found ? 0 : null
+          });
+        }
+
+        // Disable EVERY experimental toggle currently active in the
+        // "experiments" compound — whatever its name (including unknown ones).
+        if (toggles.experiments) {
+          const expResult = disableAllExperiments(levelDatBytes);
+          report.push({
+            type: 'experiments',
+            found: expResult.found,
+            disabled: expResult.disabled
+          });
+        }
+
+        // === PART 2: Remove behavior pack & resource pack from the world ===
+        // An add-on/behavior pack that's still active in a world keeps
+        // achievements locked even if every flag above is already 0.
+        if (toggles.packs) {
+          const packFiles = ['world_behavior_packs.json', 'world_resource_packs.json'];
+
+          for (const fileName of packFiles) {
+            const entry = findEntryByName(zip, fileName);
+            if (!entry) {
+              report.push({ type: 'pack', name: fileName, found: false });
+              continue;
+            }
+
+            const text = await entry.async('string');
+            let packCount = 0;
+            try {
+              const parsed = JSON.parse(text);
+              packCount = Array.isArray(parsed) ? parsed.length : 0;
+            } catch (e) {
+              packCount = text.trim().length > 2 ? -1 : 0; // -1 = couldn't be parsed but has content
+            }
+
+            if (packCount > 0 || packCount === -1) {
+              zip.file(entry.name, '[]');
+              report.push({ type: 'pack', name: fileName, found: true, removedCount: packCount });
+            } else {
+              report.push({ type: 'pack', name: fileName, found: true, removedCount: 0 });
+            }
+          }
+        }
+
+        // === PART 3: Rename the world (LevelName tag + levelname.txt) ===
+        // Unlike the flags/ints above, TAG_String has a length that can
+        // change, so it needs a new buffer (not in-place), and the
+        // level.dat header (first 8 bytes) needs to be re-adjusted.
+        let finalLevelDatBytes = levelDatBytes;
+        if (toggles.renameWorld) {
+          const newName = (this.newWorldName || '').trim();
+          if (newName) {
+            const renameResult = setNamedStringTag(finalLevelDatBytes, 'LevelName', newName);
+            if (renameResult.found) {
+              finalLevelDatBytes = fixLevelDatHeaderLength(renameResult.bytes);
+              report.push({ type: 'rename', applied: true, found: true, before: renameResult.before, after: newName });
+
+              // levelname.txt (if present) is also used by the game to
+              // display the world name on the world-select screen, so
+              // it's updated to match too.
+              const levelNameTxtEntry = findEntryByName(zip, 'levelname.txt');
+              if (levelNameTxtEntry) {
+                zip.file(levelNameTxtEntry.name, newName);
+              }
+            } else {
+              report.push({ type: 'rename', applied: false, found: false, before: null, after: newName });
+            }
+          }
+        }
+
+        const anyFlagFound = report.some(r => r.type === 'flag' && r.found);
+        const anyPackRemoved = report.some(r => r.type === 'pack' && r.found && r.removedCount !== 0);
+        const anyExpDisabled = report.some(r => r.type === 'experiments' && r.disabled && r.disabled.length > 0);
+        const anyRenamed = report.some(r => r.type === 'rename' && r.applied);
+        const anyFound = anyFlagFound || anyPackRemoved || anyExpDisabled || anyRenamed;
+
+        if (!anyFound) {
+          this.pushNotFound();
+          return;
+        }
+
+        // Write the modified level.dat back into the zip
+        zip.file(levelDatEntry.name, finalLevelDatBytes);
+
+        // Regenerate the .mcworld file
+        const outBlob = await zip.generateAsync({
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 }
+        });
+
+        const outName = suggestOutputName(this.selectedFile.name);
+        this.pushSuccess(report, outBlob, outName);
+
+      } catch (err) {
+        console.error(err);
+        this.pushError('An error occurred while reading the file. Make sure the uploaded file is a valid .mcworld / world .zip and isn\'t corrupted.');
+      } finally {
+        this.processing = false;
+      }
+    },
+
+    /* ---------- Build result entries for the Vue state ---------- */
+    pushSuccess(report, blob, outName) {
+      const flagResults = report.filter(r => r.type === 'flag').map(r => ({
+        name: r.name,
+        found: r.found,
+        beforeLabel: r.name.startsWith('GameType') ? gameTypeLabel(r.before) : r.before,
+        afterLabel: r.name.startsWith('GameType') ? gameTypeLabel(r.after) : r.after
+      }));
+      const packResults = report.filter(r => r.type === 'pack');
+      const expResults = report.filter(r => r.type === 'experiments');
+      const renameResult = report.find(r => r.type === 'rename' && r.applied) || null;
+
+      const expDisabledCount = expResults.reduce((sum, r) => sum + (r.disabled ? r.disabled.length : 0), 0);
+      const flagsFixedCount = flagResults.filter(f => f.found).length;
+      const packsRemovedCount = packResults.filter(p => p.found && p.removedCount !== 0).length;
+      const packRemoved = packResults.some(r => r.found && r.removedCount !== 0);
+
+      const downloadUrl = URL.createObjectURL(blob);
+      const downloadBaseName = outName.replace(/\.mcworld$/i, '');
+
+      this.results.push({
+        id: ++resultIdCounter,
+        kind: 'success',
+        flagResults,
+        packResults,
+        expResults,
+        expDisabledCount,
+        flagsFixedCount,
+        packsRemovedCount,
+        packRemoved,
+        renameResult,
+        downloadUrl,
+        downloadBaseName,
+        time: nowTime()
+      });
+
+      this.scrollResultsIntoView();
+    },
+
+    pushNotFound() {
+      this.results.push({
+        id: ++resultIdCounter,
+        kind: 'notfound',
+        time: nowTime()
+      });
+      this.scrollResultsIntoView();
+    },
+
+    pushError(message) {
+      this.results.push({
+        id: ++resultIdCounter,
+        kind: 'error',
+        message,
+        time: nowTime()
+      });
+      this.scrollResultsIntoView();
+    },
+
+    /* ---------- Keep the editable output file/folder name filesystem-safe ---------- */
+    sanitizeOutputName(result) {
+      let cleaned = (result.downloadBaseName || '')
+        .replace(/[\\/:*?"<>|]/g, '')
+        .trim();
+      if (!cleaned) {
+        cleaned = 'world_fixed';
+      }
+      result.downloadBaseName = cleaned;
+    },
+
+    scrollResultsIntoView() {
+      this.$nextTick(() => {
+        const chatArea = this.$refs.chatArea;
+        if (chatArea) {
+          chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
+        }
+      });
+    }
+  }
+}).mount('#app');
+
+</script>
 </body>
 </html>
